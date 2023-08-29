@@ -8,7 +8,7 @@ model_name = "bert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModel.from_pretrained(model_name)
 
-input_text = "I love using the Transformers library!"
+input_text = "I love this library!"
 inputs = tokenizer(input_text, return_tensors="pt", padding=True, truncation=True)
 
 with torch.no_grad():
@@ -17,5 +17,6 @@ with torch.no_grad():
 hidden_states = outputs.last_hidden_state
 
 print(hidden_states)
+print(hidden_states.size())
 #last_layer = model.base_model.encoder.layer[-1]
 
