@@ -1,13 +1,12 @@
 # load data
 import json
-import numpy as np
 
 
-def _load_fbk15_237(path):
+def _load_fbk15_237(dataset):
     triples = []
     
     try:
-        with open(path, "r", encoding="utf-8") as file:
+        with open("data/FB15K-237/{dataset}.txt".format(dataset=dataset), "r", encoding="utf-8") as file:
             lines = file.readlines()
             for line in lines:
                 triples.append(line.strip().split('\t'))
@@ -55,7 +54,7 @@ def _load_fbk15_237_mid2descriptions(path):
     return entity_descriptions
 
 
-def fbk15_237_to_json(triples, entity_names):
+def fbk15_237_to_json(triples, entity_names, dataset):
     entries = []
     
     for triple in triples:
@@ -68,13 +67,13 @@ def fbk15_237_to_json(triples, entity_names):
 
         entries.append(entry)
         
-    filename = "myfile.json"
+    filename = "data/FB15K-237/{dataset}.json".format(dataset=dataset)
     try:
-        print("Saving file ...") 
-        with open(filename, "w") as out_file:
-            json.dump(entries, out_file, indent = 6)
+        print("Saving FBK15-237 triples as {} ...".format(filename)) 
+        with open(filename, "w", encoding="utf-8") as out_file:
+            json.dump(entries, out_file, indent = 4, ensure_ascii=False)
             
-        print("Data safed to {}".format(filename))
+        print("Data saved to {}".format(filename))
             
     except:
         print("Data could not be saved as .json")
@@ -92,33 +91,38 @@ def _save_FBK15_237_entities_to_json(entity_names, entity_descriptions):
             entry["entity_desc"] = entity_descriptions[key]
         else:
             count += 1
-            print("Keys not found: {}".format(count))
+            print("Key not found in entity descriptions: {}".format(key))
         
         entries.append(entry)
         
-    filename = "eneties.json"
+    print("{} keys do not exist in entity descriptions".format(count))
+        
+    filename = "data/FB15K-237/entities.json"
     try:
-        print("Saving file ...") 
-        with open(filename, "w") as out_file:
-            json.dump(entries, out_file, indent = 6)
+        print("Saving FBK15-237 entity data as {} ...".format(filename)) 
+        with open(filename, "w", encoding="utf-8") as out_file:
+            json.dump(entries, out_file, indent = 4, ensure_ascii=False)
             
-        print("Data saved to {}".format(filename))
+        print("Entities saved to {}".format(filename))
             
     except:
-        pass
+        print("Entities could not be saved")
     
             
 def main():
     
     print("Start pre-processing")
-
-    triples = _load_fbk15_237("data/FB15K-237/train.txt")
-    entity_names = _load_fbk15_237_mid2names("data/FB15K-237/FB15K_mid2name.txt")
-    fbk15_237_to_json(triples, entity_names)
+    
+    datasets = ["train", "valid", "test"]
+    
+    for dataset in datasets:
+        triples = _load_fbk15_237(dataset)
+        entity_names = _load_fbk15_237_mid2names("data/FB15K-237/FB15K_mid2name.txt")
+        fbk15_237_to_json(triples, entity_names, dataset)
     
     entity_descriptions = _load_fbk15_237_mid2descriptions("data/FB15K-237/FB15k_mid2description.txt")
     _save_FBK15_237_entities_to_json(entity_names, entity_descriptions)
-        
+
     print("Finished preprocessing")
 
 
