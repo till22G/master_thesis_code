@@ -1,7 +1,6 @@
 # load data
 import json
 
-
 def _load_fbk15_237(dataset):
     triples = []
     
@@ -61,8 +60,8 @@ def fbk15_237_to_json(triples, entity_names, dataset):
         entry = {}
         entry["head_id"] = triple[0]
         entry["head"] = entity_names[triple[0]]
-        entry["relation"] = triple[1]
-        entry["tail_id"] = triple[2]
+        entry["relation"] = _process_relation(triple[1])
+        entry["tail_id"] = triple[2] 
         entry["tail"] = entity_names[triple[2]]
 
         entries.append(entry)
@@ -108,6 +107,9 @@ def _save_FBK15_237_entities_to_json(entity_names, entity_descriptions):
     except:
         print("Entities could not be saved")
     
+def _process_relation(relation: str) -> str: 
+    return relation.replace("/", " ").replace("./", " ").replace("_", " ")
+
             
 def main():
     
