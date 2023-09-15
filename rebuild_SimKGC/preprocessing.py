@@ -61,9 +61,9 @@ def fbk15_237_to_json(triples, entity_names, dataset):
         entry = {}
         entry["head_id"] = triple[0]
         entry["head"] = entity_names[triple[0]]
-        entry["realtion"] = triple[1]
-        entry["tail_id"] = entity_names[triple[2]]
-        entry["tail"] = triple[2]
+        entry["relation"] = triple[1]
+        entry["tail_id"] = triple[2]
+        entry["tail"] = entity_names[triple[2]]
 
         entries.append(entry)
         
