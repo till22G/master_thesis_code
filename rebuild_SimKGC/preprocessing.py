@@ -45,7 +45,7 @@ def _load_fbk15_237_mid2descriptions(path: str) -> dict:
             for line in lines:
                 code, description = line.strip().split('\t')
                 description = description.replace("\\", "")
-                entity_descriptions[code] = description
+                entity_descriptions[code] = " ".join(description.split()[:50]) # truncate descriptions at 50 tokens
                 
     except:
         print("FBK15_237_mid2descriptions could not be loaded successfully")
@@ -56,11 +56,14 @@ def _load_fbk15_237_mid2descriptions(path: str) -> dict:
 def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, dataset: str) -> None:
     entries = []
     
+    rel_id_to_surface_form = _normalize_relations(triples)
+    _check_duplicates(rel_id_to_surface_form)
+    
     for triple in triples:
         entry = {}
         entry["head_id"] = triple[0]
         entry["head"] = entity_names[triple[0]]
-        entry["relation"] = _process_relation(triple[1])
+        entry["relation"] = rel_id_to_surface_form[triple[1]]
         entry["tail_id"] = triple[2] 
         entry["tail"] = entity_names[triple[2]]
 
@@ -96,7 +99,7 @@ def _save_FBK15_237_entities_to_json(entity_names: dict, entity_descriptions: di
         
     print("{} keys do not exist in entity descriptions".format(count))
         
-    filename = "{dataset_path}entities2.json".format(dataset_path=dataset_path)
+    filename = "{dataset_path}preprocessed_entities.json".format(dataset_path=dataset_path)
     try:
         print("Saving FBK15-237 entity data as {} ...".format(filename)) 
         with open(filename, "w", encoding="utf-8") as out_file:
@@ -107,8 +110,37 @@ def _save_FBK15_237_entities_to_json(entity_names: dict, entity_descriptions: di
     except:
         print("Entities could not be saved")
     
-def _process_relation(relation: str) -> str: 
+def _rel_to_surface_form(relation: str) -> str: 
     return relation.replace("/", " ").replace("./", " ").replace("_", " ")
+
+
+def _normalize_relations(triples: list) -> dict:
+    rel_id_to_surface_form = {}
+    for item in triples:
+        rel_id_to_surface_form[item[1]] = _rel_to_surface_form(item[1])
+
+    return rel_id_to_surface_form 
+    
+
+def _check_duplicates(rel_id_to_surface_form: dict) -> None:
+    
+    """ tmp = rel_id_to_surface_form.copy()
+    tuple = tmp.popitem()
+    rel_id_to_surface_form["test_key"] = tuple[1] """
+
+    surface_form_to_rel_id = {}
+    for key, item in rel_id_to_surface_form.items():
+        if item is None:
+            continue
+        surface_form_to_rel_id.setdefault(item, set()).add(key)
+    result = [key for key, values in surface_form_to_rel_id.items()
+                                if len(values) > 1]
+    if (len(result) == 0):
+        print("No duplicates in surface forms found")
+    else:
+        print("Attention !!! Some relations normalize to the same surface form")
+        
+    print(result)
 
             
 def main():
@@ -117,9 +149,8 @@ def main():
     
     datasets = ["train", "valid", "test"]
     
-    
     dataset_path = "data/FB15K237/"
-    
+     
     for dataset in datasets:
         triples = _load_fbk15_237(dataset_path, dataset)
         entity_names = _load_fbk15_237_mid2names("{dataset_path}FB15K_mid2name.txt".format(dataset_path=dataset_path))
