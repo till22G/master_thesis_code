@@ -12,8 +12,9 @@ def _load_fbk15_237(dataset_path: str, dataset: str) -> list:
                 
         print("FBK15_237 data was loaded successfully")
         
-    except:
+    except Exception as e:
         print("FBK15_237 data could not be loaded successfully")
+        print(e)
                               
     return triples
         
@@ -31,8 +32,9 @@ def _load_fbk15_237_mid2names(path: str) -> dict:
         
         print("FBK15_237 names were loaded successfully")
         
-    except:      
+    except Exception as e:      
         print("FBK15_237 names could not be loaded successfully")
+        print(e)
         
     return entity_names
 
@@ -47,8 +49,9 @@ def _load_fbk15_237_mid2descriptions(path: str) -> dict:
                 description = description.replace("\\", "")
                 entity_descriptions[code] = " ".join(description.split()[:50]) # truncate descriptions at 50 tokens
                 
-    except:
+    except Exception as e:
         print("FBK15_237_mid2descriptions could not be loaded successfully")
+        print(e)
 
     return entity_descriptions
 
@@ -77,8 +80,9 @@ def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, data
             
         print("Data saved to {}".format(filename))
             
-    except:
+    except Exception as e:
         print("Data could not be saved as .json")
+        print(e)
         
         
 def _save_FBK15_237_entities_to_json(entity_names: dict, entity_descriptions: dict, dataset_path: str) -> None:
@@ -107,8 +111,9 @@ def _save_FBK15_237_entities_to_json(entity_names: dict, entity_descriptions: di
             
         print("Entities saved to {}".format(filename))
             
-    except:
+    except Exception as e:
         print("Entities could not be saved")
+        print(e)
     
 def _rel_to_surface_form(relation: str) -> str: 
     return relation.replace("/", " ").replace("./", " ").replace("_", " ")
@@ -132,15 +137,14 @@ def _check_duplicates(rel_id_to_surface_form: dict) -> None:
     for key, item in rel_id_to_surface_form.items():
         if item is None:
             continue
-        surface_form_to_rel_id.setdefault(item, set()).add(key)
+        surface_form_to_rel_id.setdefault(item, set()).add(key) 
     result = [key for key, values in surface_form_to_rel_id.items()
                                 if len(values) > 1]
     if (len(result) == 0):
         print("No duplicates in surface forms found")
     else:
         print("Attention !!! Some relations normalize to the same surface form")
-        
-    print(result)
+        print(result)
 
             
 def main():
