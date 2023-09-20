@@ -152,15 +152,15 @@ def main():
     
     datasets = ["train", "valid", "test"]
     
-    dataset_path = "data/FB15K237"
+    dataset_path = "data/FB15K237/"
     
     # list containing a dictionary of each triple in the data. The dictionary containes
     # the head_id, the head_name, the normalized relation, the tail_id and the tail name
     all_triples = []
     
     # load entity descriptions as dictionary with the the code as key and the descriptions as value 
-    entity_descriptions = _load_fbk15_237_mid2descriptions("{dataset_path}/FB15k_mid2description.txt".format(dataset_path=dataset_path))
-    entity_names = _load_fbk15_237_mid2names("{dataset_path}/FB15K_mid2name.txt".format(dataset_path=dataset_path))
+    entity_descriptions = _load_fbk15_237_mid2descriptions("{dataset_path}FB15k_mid2description.txt".format(dataset_path=dataset_path))
+    entity_names = _load_fbk15_237_mid2names("{dataset_path}FB15K_mid2name.txt".format(dataset_path=dataset_path))
     
     for dataset in datasets:
         triples = _load_fbk15_237(dataset_path, dataset)
