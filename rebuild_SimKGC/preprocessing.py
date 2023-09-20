@@ -145,22 +145,29 @@ def _check_duplicates(rel_id_to_surface_form: dict) -> None:
         print("Attention !!! Some relations normalize to the same surface form")
         print(result)
 
-            
+
 def main():
     
     print("Start pre-processing")
     
     datasets = ["train", "valid", "test"]
     
-    dataset_path = "data/FB15K237/"
-
-     
+    dataset_path = "data/FB15K237"
+    
+    # list containing a dictionary of each triple in the data. The dictionary containes
+    # the head_id, the head_name, the normalized relation, the tail_id and the tail name
+    all_triples = []
+    
+    # load entity descriptions as dictionary with the the code as key and the descriptions as value 
+    entity_descriptions = _load_fbk15_237_mid2descriptions("{dataset_path}/FB15k_mid2description.txt".format(dataset_path=dataset_path))
+    entity_names = _load_fbk15_237_mid2names("{dataset_path}/FB15K_mid2name.txt".format(dataset_path=dataset_path))
+    
     for dataset in datasets:
         triples = _load_fbk15_237(dataset_path, dataset)
-        entity_names = _load_fbk15_237_mid2names("{dataset_path}FB15K_mid2name.txt".format(dataset_path=dataset_path))
         fbk15_237_to_json(triples, entity_names, dataset_path, dataset)
     
-    entity_descriptions = _load_fbk15_237_mid2descriptions("{dataset_path}/FB15k_mid2description.txt".format(dataset_path=dataset_path))
+    
+    
     _save_FBK15_237_entities_to_json(entity_names, entity_descriptions, dataset_path)
 
     print("Finished preprocessing")
