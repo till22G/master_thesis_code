@@ -30,7 +30,7 @@ def _load_fbk15_237_mid2names(path: str) -> dict:
                 name = name.replace("_", " ")
                 entity_names[code] = name
         
-        print("FBK15_237 names were loaded successfully")
+        print("{} names from /FB15k_mid2description.txt were loaded successfully".format(len(entity_names)))
         
     except Exception as e:      
         print("FBK15_237 names could not be loaded successfully")
@@ -138,8 +138,7 @@ def _check_duplicates(rel_id_to_surface_form: dict) -> None:
         if item is None:
             continue
         surface_form_to_rel_id.setdefault(item, set()).add(key) 
-    result = [key for key, values in surface_form_to_rel_id.items()
-                                if len(values) > 1]
+    result = [key for key, values in surface_form_to_rel_id.items() if len(values) > 1]
     if (len(result) == 0):
         print("No duplicates in surface forms found")
     else:
@@ -154,6 +153,7 @@ def main():
     datasets = ["train", "valid", "test"]
     
     dataset_path = "data/FB15K237/"
+
      
     for dataset in datasets:
         triples = _load_fbk15_237(dataset_path, dataset)
