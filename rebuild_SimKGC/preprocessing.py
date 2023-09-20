@@ -92,30 +92,48 @@ def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, data
         print("Data could not be saved as .json")
         print(e)
         
-        
-def _save_FBK15_237_entities_to_json(entity_names: dict, entity_descriptions: dict, dataset_path: str) -> None:
+                
+def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, entity_descriptions: dict, dataset_path: str) -> None:
     entries = []
     count = 0
     
-    for key in entity_names:
-        entry = {}
-        entry["entity_id"] = key
-        entry["entity"] = entity_names[key]
-        if key in entity_descriptions:
-            entry["entity_desc"] = entity_descriptions[key]
-        else:
-            count += 1
-            print("Key not found in entity descriptions: {}".format(key))
-        
-        entries.append(entry)
-        
-    print("{} keys do not exist in entity descriptions".format(count))
+    entities = {}
+    
+    # save all entities that are contained in the training, validation and test data
+    for triple in all_triples:
+        head_id = triple[0]
+        if head_id not in entities:
+            entity_name = entity_names[head_id]
+            if head_id in entity_descriptions:
+                entity_description = entity_descriptions[head_id]
+            else:
+                count += 1
+                print("Entity ID not found in entity descriptions: {}".format(head_id))
+                
+            entities[head_id] = {"entity_id" : head_id,
+                                 "entity": entity_name,
+                                 "entity_desc": entity_description}
+                     
+        tail_id = triple[2]
+        if tail_id not in entities:
+            entity_name = entity_names[tail_id]
+            if tail_id in entity_descriptions:
+                entity_description = entity_descriptions[tail_id]
+            else:
+                count += 1
+                print("Entity ID not found in entity descriptions: {}".format(tail_id))
+                
+            entities[tail_id] = {"entity_id" : tail_id,
+                                 "entity": entity_name,
+                                 "entity_desc": entity_description}
+            
         
     filename = "{dataset_path}preprocessed_entities.json".format(dataset_path=dataset_path)
     try:
         print("Saving FBK15-237 entity data as {} ...".format(filename)) 
         with open(filename, "w", encoding="utf-8") as out_file:
-            json.dump(entries, out_file, indent = 4, ensure_ascii=False)
+            #json.dump(entries, out_file, indent = 4, ensure_ascii=False)
+            json.dump(list(entities.values()), out_file, indent = 4, ensure_ascii=False)
             
         print("Entities saved to {}".format(filename))
             
@@ -175,10 +193,9 @@ def main():
     for dataset in datasets:
         triples = _load_fbk15_237_triples(dataset_path, dataset)
         fbk15_237_to_json(triples, entity_names, dataset_path, dataset)
+        all_triples += triples
     
-    
-    
-    _save_FBK15_237_entities_to_json(entity_names, entity_descriptions, dataset_path)
+    _save_FBK15_237_entities_to_json(all_triples, entity_names, entity_descriptions, dataset_path)
 
     print("Finished pre-processing with {} errors".format(error_count))
 
