@@ -1,7 +1,7 @@
 # load data
 import json
 
-def _load_fbk15_237(dataset_path: str, dataset: str) -> list:
+def _load_fbk15_237_triples(dataset_path: str, dataset: str) -> list:
     triples = []
     
     try:
@@ -13,6 +13,8 @@ def _load_fbk15_237(dataset_path: str, dataset: str) -> list:
         print("FBK15_237 data was loaded successfully")
         
     except Exception as e:
+        global error_count
+        error_count += 1 
         print("FBK15_237 data could not be loaded successfully")
         print(e)
                               
@@ -32,7 +34,9 @@ def _load_fbk15_237_mid2names(path: str) -> dict:
         
         print("{} names from /FB15k_mid2description.txt were loaded successfully".format(len(entity_names)))
         
-    except Exception as e:      
+    except Exception as e:
+        global error_count
+        error_count += 1 
         print("FBK15_237 names could not be loaded successfully")
         print(e)
         
@@ -50,6 +54,8 @@ def _load_fbk15_237_mid2descriptions(path: str) -> dict:
                 entity_descriptions[code] = " ".join(description.split()[:50]) # truncate descriptions at 50 tokens
                 
     except Exception as e:
+        global error_count
+        error_count += 1 
         print("FBK15_237_mid2descriptions could not be loaded successfully")
         print(e)
 
@@ -81,6 +87,8 @@ def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, data
         print("Data saved to {}".format(filename))
             
     except Exception as e:
+        global error_count
+        error_count += 1 
         print("Data could not be saved as .json")
         print(e)
         
@@ -112,6 +120,8 @@ def _save_FBK15_237_entities_to_json(entity_names: dict, entity_descriptions: di
         print("Entities saved to {}".format(filename))
             
     except Exception as e:
+        global error_count
+        error_count += 1 
         print("Entities could not be saved")
         print(e)
     
@@ -145,7 +155,7 @@ def _check_duplicates(rel_id_to_surface_form: dict) -> None:
         print("Attention !!! Some relations normalize to the same surface form")
         print(result)
 
-
+error_count = 0
 def main():
     
     print("Start pre-processing")
@@ -163,14 +173,14 @@ def main():
     entity_names = _load_fbk15_237_mid2names("{dataset_path}FB15K_mid2name.txt".format(dataset_path=dataset_path))
     
     for dataset in datasets:
-        triples = _load_fbk15_237(dataset_path, dataset)
+        triples = _load_fbk15_237_triples(dataset_path, dataset)
         fbk15_237_to_json(triples, entity_names, dataset_path, dataset)
     
     
     
     _save_FBK15_237_entities_to_json(entity_names, entity_descriptions, dataset_path)
 
-    print("Finished preprocessing")
+    print("Finished pre-processing with {} errors".format(error_count))
 
 
 if __name__ == "__main__":
