@@ -143,13 +143,28 @@ def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, enti
         print(e)
     
     
+
+# !!! this function is taken from the official SimKGC repository !!!
 def _rel_to_surface_form(relation: str) -> str: 
-    return relation.replace("/", " ").replace("./", " ").replace("_", " ")
+    tokens = relation.replace("/", "/").replace("./", "/").strip().split("/")    
+    dedup_tokens = []
+    for token in tokens:
+        if token not in dedup_tokens[-3:]:
+            dedup_tokens.append(token)
+    # leaf words are more important (maybe)
+    relation_tokens = dedup_tokens[::-1]
+    relation = ' '.join([t for idx, t in enumerate(relation_tokens)
+                         if idx == 0 or relation_tokens[idx] != relation_tokens[idx - 1]])
+
+    return relation
+
+# !! check whether I am allowed to use this funciton or not!!!
+
 
 
 def _normalize_relations(triples: list) -> dict:
     rel_id_to_surface_form = {}
-    for item in triples:
+    for item in triples:    
         rel_id_to_surface_form[item[1]] = _rel_to_surface_form(item[1])
         
     datapath = "data/FB15K237/"
