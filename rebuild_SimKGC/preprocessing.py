@@ -1,4 +1,3 @@
-# load data
 import json
 
 def _load_fbk15_237_triples(dataset_path: str, dataset: str) -> list:
@@ -143,6 +142,7 @@ def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, enti
         print("Entities could not be saved")
         print(e)
     
+    
 def _rel_to_surface_form(relation: str) -> str: 
     return relation.replace("/", " ").replace("./", " ").replace("_", " ")
 
@@ -151,7 +151,19 @@ def _normalize_relations(triples: list) -> dict:
     rel_id_to_surface_form = {}
     for item in triples:
         rel_id_to_surface_form[item[1]] = _rel_to_surface_form(item[1])
+        
+    datapath = "data/FB15K237/"
+    try:
+        with open("{}relations.json".format(datapath), "w", encoding="utf-8") as out_file:
+            json.dump(rel_id_to_surface_form, out_file, ensure_ascii=False, indent=4)
+            print("Save {} realtions to /relations.json".format(len(rel_id_to_surface_form)))
 
+    except Exception as e:
+        global error_count
+        error_count += 1 
+        print("Entities could not be saved")
+        print(e)
+        
     return rel_id_to_surface_form 
     
 
@@ -173,6 +185,8 @@ def _check_duplicates(rel_id_to_surface_form: dict) -> None:
         print("Attention !!! Some relations normalize to the same surface form")
         print(result)
 
+# FB15k_237 entity descriptions
+fbk15_237_entity_descriptions = {}
 error_count = 0
 def main():
     

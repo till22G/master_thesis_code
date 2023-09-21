@@ -4,15 +4,17 @@ import torch
 
 from transformers import AutoModel, AutoTokenizer
 
-model_name = "bert-base-uncased"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModel.from_pretrained(model_name)
+# load the bert-base-uncased model
+model_type = "bert-base-uncased"
+tokenizer  = AutoTokenizer.from_pretrained(model_type)
+bert_hr = AutoModel.from_pretrained(model_type) # create bert model for relation aware embeddings
+bert_t = AutoModel.from_pretrained(model_type) # create bert model for tail entity embeddings
 
 input_text = "I love this library!"
 inputs = tokenizer(input_text, return_tensors="pt", padding=True, truncation=True)
 
 with torch.no_grad():
-    outputs = model(**inputs)
+    outputs = bert_hr(**inputs)
 
 hidden_states = outputs.last_hidden_state
 
