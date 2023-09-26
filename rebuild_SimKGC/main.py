@@ -4,7 +4,9 @@ import torch
 
 from transformers import AutoModel, AutoTokenizer
 
-# load the bert-base-uncased model
+from logger import logger
+
+"""  load the bert-base-uncased model
 model_type = "bert-base-uncased"
 tokenizer  = AutoTokenizer.from_pretrained(model_type)
 bert_hr = AutoModel.from_pretrained(model_type) # create bert model for relation aware embeddings
@@ -20,10 +22,10 @@ hidden_states = outputs.last_hidden_state
 
 print(hidden_states)
 print(hidden_states.size())
-#last_layer = model.base_model.encoder.layer[-1]
+#last_layer = model.base_model.encoder.layer[-1] """
 
 def main():
-    pass
+    logger.info("Test info")
 
 if __name__ == "__main__":
     main()
