@@ -22,3 +22,8 @@ print(hidden_states)
 print(hidden_states.size())
 #last_layer = model.base_model.encoder.layer[-1]
 
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()
