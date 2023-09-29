@@ -1,5 +1,7 @@
 import json
 
+from logger import logger
+
 def _load_fbk15_237_triples(dataset_path: str, dataset: str) -> list:
     triples = []
     
@@ -155,6 +157,7 @@ def _rel_to_surface_form(relation: str) -> str:
     relation_tokens = dedup_tokens[::-1]
     relation = ' '.join([t for idx, t in enumerate(relation_tokens)
                          if idx == 0 or relation_tokens[idx] != relation_tokens[idx - 1]])
+    relation = relation.replace("_", " ")
 
     return relation
 
@@ -167,7 +170,7 @@ def _normalize_relations(triples: list) -> dict:
     for item in triples:    
         rel_id_to_surface_form[item[1]] = _rel_to_surface_form(item[1])
         
-    datapath = "data/FB15K237/"
+    datapath = "../data/FB15K237/"
     try:
         with open("{}relations.json".format(datapath), "w", encoding="utf-8") as out_file:
             json.dump(rel_id_to_surface_form, out_file, ensure_ascii=False, indent=4)
@@ -205,11 +208,11 @@ fbk15_237_entity_descriptions = {}
 error_count = 0
 def main():
     
-    print("Start pre-processing")
+    logger.info("Start pre-processing") 
     
     datasets = ["train", "valid", "test"]
     
-    dataset_path = "data/FB15K237/"
+    dataset_path = "../data/FB15K237/"
     
     # list containing a dictionary of each triple in the data. The dictionary containes
     # the head_id, the head_name, the normalized relation, the tail_id and the tail name
