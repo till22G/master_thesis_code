@@ -91,7 +91,7 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
             if backward_triples:
                 datapoints.append(DataPoint(item["tail_id"],
                                             item["tail"],
-                                            " ".join(("inverse ", item["relation"])), 
+                                            " ".join(("inverse", item["relation"])), 
                                             item["head_id"],
                                             item["head"]))
             

@@ -6,9 +6,9 @@ assert os.path.exists(file_path), "Invalid path"
 
 dataset = Dataset(file_path, task=None)
 
-for i in [1,-1]:
+for i in [0, 1]:
     print(dataset[i].head_id)
     print(dataset[i].head_desc)
     print(dataset[i].relation)
     print(dataset[i].tail_id)
-    print(dataset[i].head_desc)
+    print(dataset[i].tail_desc)
