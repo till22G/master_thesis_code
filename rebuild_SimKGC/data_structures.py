@@ -80,7 +80,9 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
             data = json.load(infile)
         
         logger.info("Load {} datapoints from {}".format(len(data), path))
-        
+        if backward_triples:
+            logger.info("Adding inverse triples")
+            
         datapoints = []
         for item in data:
             datapoints.append(DataPoint(item["head_id"],
@@ -94,5 +96,7 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
                                             " ".join(("inverse", item["relation"])), 
                                             item["head_id"],
                                             item["head"]))
+                
+        logger.info("Created dataset with {} datapoints".format(len(datapoints)))
             
         return datapoints
