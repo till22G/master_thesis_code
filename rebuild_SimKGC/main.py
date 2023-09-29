@@ -4,10 +4,14 @@ import torch
 
 from transformers import AutoModel, AutoTokenizer
 
+from parser import args
 from logger import logger
+from trainer import CustomTrainer
 
 def main():
     logger.info("Entered Main")
+    
+    trainer = CustomTrainer(args)
 
 if __name__ == "__main__":
     main()

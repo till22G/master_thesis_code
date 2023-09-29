@@ -52,14 +52,12 @@ class DataPoint():
         
     
 class Dataset(Dataset):
-    def __init__(self, path, task, data_points=None) -> None:
+    def __init__(self, path, data_points=None) -> None:
         super().__init__()
         
         self.path = path 
         assert os.path.exists(self.path), "Path is invalid"
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
-        
-        self.task = task
         
         if data_points is None:
             self.data_points = []
