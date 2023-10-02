@@ -6,19 +6,41 @@ from typing import List
 
 from logger import logger
 
+entity_descriptions = {}
+
+def load_entity_descriptions(path) -> None:
+    
+    assert os.path.exists(path), "Path is invalid"
+    assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
+    
+    logger.info("Loading entity descriptions from {}".format(path))
+    
+    with open (path, "r", encoding="utf-8") as infile:
+        data = json.load(infile)
+        
+    for item in data:
+        entity_descriptions[item["entity_id"]] = item["entity_desc"]
+        
+    logger.info("{} entity descriptinos loaded".format(len(entity_descriptions)))     
+    
+    
 class DataPoint():
     def __init__(self, 
                  head_id: str = None, 
-                 head: str = None, 
+                 head: str = None,
+                 head_desc: str = None,
                  relation: str = None, 
                  tail_id: str = None, 
-                 tail: str = None) -> None:
+                 tail: str = None,
+                 tail_desc: str = None) -> None: 
 
         self.head_id = head_id
         self.head = head
+        self.head_desc = head_desc
         self.relation = relation
         self.tail_id = tail_id
         self.tail = tail
+        self.tail_desc = tail_desc
     
     def get_head_id(self) -> str:
         if self.head_id is not None:
@@ -28,6 +50,12 @@ class DataPoint():
     
     def get_head(self) -> str:
         if self.head is not None:
+            return self.head
+        else:
+            return ""
+        
+    def get_head_desc(self) -> str:
+        if self.head_desc is not None:
             return self.head
         else:
             return ""
@@ -50,9 +78,15 @@ class DataPoint():
         else:
             return ""
         
+    def get_tail_desc(self) -> str:
+        if self.tail is not None:
+            return self.tail
+        else:
+            return ""
+        
+        
     def encode_to_dict(self) -> dict:
         
-    
     
         return {'hr_token_ids': None,
                 'hr_token_type_ids': None,
@@ -90,6 +124,10 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
             data = json.load(infile)
         
         logger.info("Load {} datapoints from {}".format(len(data), path))
+        
+        if not entity_descriptions:
+            entity_descriptions = load_entity_descriptions()
+            
         if backward_triples:
             logger.info("Adding inverse triples")
             
