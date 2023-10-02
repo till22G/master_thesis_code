@@ -13,4 +13,7 @@ parser.add_argument("--train-path", default="", type=str,
                     help="Define the path to the training data")
 parser.add_argument("--valid-path", default="", type=str,
                     help="Define the path to the validation data")
+parser.add_argument("--max-number-tokens", default=50, type=int,
+                    help="Specify the maximal number of tokens returned by the tokenizer")
+
 args = parser.parse_args()

@@ -2,9 +2,14 @@ import os
 import json
 
 from torch.utils.data import Dataset
-from typing import List
+from typing import List, Optional
+from transformers import AutoTokenizer
 
 from logger import logger
+from argparser import args
+
+
+tokenizer: AutoTokenizer = None
 
 entity_descriptions = {}
 
@@ -24,13 +29,33 @@ def load_entity_descriptions(path) -> None:
     logger.info("{} entity descriptinos loaded".format(len(entity_descriptions)))
     
 
-def _create_head_text(entity_head: str, entity_desc: str):
+def _concat_name_desciption(entity_head: str, entity_desc: str):
     if not entity_desc:
         return entity_head
     if entity_desc.startswith(entity_head):
         entity_desc = entity_desc[len(entity_head):].strip()
     return "{}: {}".format(entity_head, entity_desc)
-  
+
+
+def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
+    global tokenizer
+    if tokenizer is None:
+        create_tokenizer()
+    
+    tokens = tokenizer(text,
+                       text_pair = relation,
+                       add_special_tokens = True,
+                       max_length = args.max_number_tokens,
+                       return_token_type_ids = True)
+    
+    return tokens
+
+
+def create_tokenizer():
+    global tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
+    logger.info("Created tokenizer from {}".format(args.pretrained_model))
+
     
 class DataPoint():
     def __init__(self, 
@@ -94,10 +119,11 @@ class DataPoint():
         
         
     def encode_to_dict(self) -> dict:
+                
+        head_text = _concat_name_desciption(self.head, self.head_desc)
+        hr_tokens = _tokenize_text(head_text, self.relation)
         
-        head, head_desc, tail, tail_desc = self.head, self.head_desc, self.tail, self.tail_desc
-        
-        head_text = _create_head_text(head, head_desc)
+        print(hr_tokens)
         
     
         return {'hr_token_ids': None,

@@ -4,7 +4,7 @@ import torch
 
 from transformers import AutoModel, AutoTokenizer
 
-from parser import args
+from argparser import args
 from logger import logger
 from trainer import CustomTrainer
 
