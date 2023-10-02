@@ -9,16 +9,16 @@ from logger import logger
 class DataPoint():
     def __init__(self, 
                  head_id: str = None, 
-                 head_desc: str = None, 
+                 head: str = None, 
                  relation: str = None, 
                  tail_id: str = None, 
-                 tail_desc: str = None) -> None:
+                 tail: str = None) -> None:
 
         self.head_id = head_id
-        self.head_desc = head_desc
+        self.head = head
         self.relation = relation
         self.tail_id = tail_id
-        self.tail_desc = tail_desc
+        self.tail = tail
     
     def get_head_id(self) -> str:
         if self.head_id is not None:
@@ -26,9 +26,9 @@ class DataPoint():
         else:
             return ""
     
-    def get_head_desc(self) -> str:
-        if self.head_desc is not None:
-            return self.head_desc
+    def get_head(self) -> str:
+        if self.head is not None:
+            return self.head
         else:
             return ""
         
@@ -44,9 +44,9 @@ class DataPoint():
         else:
             return ""
         
-    def get_tail_desc(self) -> str:
-        if self.tail_desc is not None:
-            return self.tail_desc
+    def get_tail(self) -> str:
+        if self.tail is not None:
+            return self.tail
         else:
             return ""
         
