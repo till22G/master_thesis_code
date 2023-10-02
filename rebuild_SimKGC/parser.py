@@ -9,10 +9,8 @@ parser.add_argument("--test-mode", action="store_true",
                     help="Start SimKGC in test mode or not")
 parser.add_argument("--task", default="fb15k237", type=str,
                     help="Select the dataset that is used for training and validation")
-parser.add_argument("train-path", default="", type=str,
+parser.add_argument("--train-path", default="", type=str,
                     help="Define the path to the training data")
-parser.add_argument("valid-path", default="", type=str,
+parser.add_argument("--valid-path", default="", type=str,
                     help="Define the path to the validation data")
-
-
 args = parser.parse_args()
