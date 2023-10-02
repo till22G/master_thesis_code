@@ -1,7 +1,7 @@
 import torch.utils.data
 
 from model import build_model
-from data_structures import Dataset
+from data_structures import Dataset, collate_fn
 
 class CustomTrainer:
     def __init__(self, args) -> None:
@@ -15,6 +15,7 @@ class CustomTrainer:
             train_dataset,
             batch_size=1,
             shuffle=True,
+            collate_fn=collate_fn,
             pin_memory=True
         )
         
@@ -22,5 +23,6 @@ class CustomTrainer:
             valid_dataset,
             batch_size=1,
             shuffle=True,
+            collate_fn=collate_fn,
             pin_memory=True
         )

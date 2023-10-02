@@ -117,21 +117,25 @@ class DataPoint():
         else:
             return ""
         
-        
     def encode_to_dict(self) -> dict:
-                
+        
+        # still need to code what happens when this is set to true
+        if args.use_neigbors:
+            # the entity names should be padded with information from neighbour if
+            # their own description is to short
+            pass
+                  
         head_text = _concat_name_desciption(self.head, self.head_desc)
         hr_tokens = _tokenize_text(head_text, self.relation)
-        
-        print(hr_tokens)
-        
-    
-        return {'hr_token_ids': None,
-                'hr_token_type_ids': None,
-                'tail_token_ids': None,
-                'tail_token_type_ids': None,
-                'head_token_ids': None,
-                'head_token_type_ids': None,
+        t_tokens = _tokenize_text(self.tail)
+        h_tokens = _tokenize_text(self.head)
+                 
+        return {'hr_token_ids': hr_tokens["input_ids"],
+                'hr_token_type_ids': hr_tokens["token_type_ids"],
+                'tail_token_ids': t_tokens["input_ids"],
+                'tail_token_type_ids': t_tokens["token_type_ids"],
+                'head_token_ids': h_tokens["input_ids"],
+                'head_token_type_ids': h_tokens["token_type_ids"],
                 'obj': self}
         
     
