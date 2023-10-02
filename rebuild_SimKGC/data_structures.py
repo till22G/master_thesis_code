@@ -21,34 +21,46 @@ class DataPoint():
         self.tail_desc = tail_desc
     
     def get_head_id(self) -> str:
-        if self.head_id is None:
+        if self.head_id is not None:
             return self.head_id
         else:
             return ""
     
     def get_head_desc(self) -> str:
-        if self.head_desc is None:
+        if self.head_desc is not None:
             return self.head_desc
         else:
             return ""
         
     def get_relation(self) -> str:
-        if self.relation is None:
+        if self.relation is not None:
             return self.relation
         else:
             return ""
     
     def get_tail_id(self) -> str:
-        if self.tail_id is None:
+        if self.tail_id is not None:
             return self.tail_id
         else:
             return ""
         
     def get_tail_desc(self) -> str:
-        if self.tail_desc is None:
+        if self.tail_desc is not None:
             return self.tail_desc
         else:
             return ""
+        
+    def encode_to_dict(self) -> dict:
+        
+    
+    
+        return {'hr_token_ids': None,
+                'hr_token_type_ids': None,
+                'tail_token_ids': None,
+                'tail_token_type_ids': None,
+                'head_token_ids': None,
+                'head_token_type_ids': None,
+                'obj': self}
         
     
 class Dataset(Dataset):
@@ -98,3 +110,21 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
         logger.info("Created dataset with {} datapoints".format(len(datapoints)))
             
         return datapoints
+    
+def collate_fn(data_batch: List[DataPoint]) -> dict:
+    
+    hr_token_ids = None
+    hr_mask = None
+    hr_token_type_id = None
+    tail_token_ids = None
+    tail_mask = None
+    tail_token_type_ids = None
+    
+    
+    
+    return {"hr_token_ids" : hr_token_ids,
+            "hr_mask" : hr_mask,
+            "hr_token_type_id" : hr_token_type_id,
+            "tail_token_ids" : tail_token_ids,
+            "tail_mask" : tail_mask,
+            "tail_token_type_ids" : tail_token_type_ids}
