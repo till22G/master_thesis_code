@@ -17,7 +17,7 @@ def load_entity_descriptions(path) -> None:
     
     with open (path, "r", encoding="utf-8") as infile:
         data = json.load(infile)
-        
+            
     for item in data:
         entity_descriptions[item["entity_id"]] = item["entity_desc"]
         
@@ -56,7 +56,7 @@ class DataPoint():
         
     def get_head_desc(self) -> str:
         if self.head_desc is not None:
-            return self.head
+            return self.head_desc
         else:
             return ""
         
@@ -80,7 +80,7 @@ class DataPoint():
         
     def get_tail_desc(self) -> str:
         if self.tail is not None:
-            return self.tail
+            return self.tail_desc
         else:
             return ""
         
@@ -120,13 +120,15 @@ class Dataset(Dataset):
             
 
 def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
+        global entity_descriptions
+        if not entity_descriptions:
+            load_entity_descriptions("../data/fb15k237/entities.json")
+        
         with open(path, "r", encoding="utf-8") as infile:
             data = json.load(infile)
         
         logger.info("Load {} datapoints from {}".format(len(data), path))
         
-        if not entity_descriptions:
-            entity_descriptions = load_entity_descriptions()
             
         if backward_triples:
             logger.info("Adding inverse triples")
@@ -135,14 +137,18 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
         for item in data:
             datapoints.append(DataPoint(item["head_id"],
                                         item["head"],
+                                        entity_descriptions[item["head_id"]],
                                         item["relation"], 
                                         item["tail_id"],
+                                        entity_descriptions[item["tail_id"]],
                                         item["tail"]))
             if backward_triples:
                 datapoints.append(DataPoint(item["tail_id"],
                                             item["tail"],
+                                            entity_descriptions[item["tail_id"]],
                                             " ".join(("inverse", item["relation"])), 
                                             item["head_id"],
+                                            entity_descriptions[item["head_id"]],
                                             item["head"]))
                 
         logger.info("Created dataset with {} datapoints".format(len(datapoints)))
