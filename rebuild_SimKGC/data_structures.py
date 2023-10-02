@@ -21,8 +21,16 @@ def load_entity_descriptions(path) -> None:
     for item in data:
         entity_descriptions[item["entity_id"]] = item["entity_desc"]
         
-    logger.info("{} entity descriptinos loaded".format(len(entity_descriptions)))     
+    logger.info("{} entity descriptinos loaded".format(len(entity_descriptions)))
     
+
+def _create_head_text(entity_head: str, entity_desc: str):
+    if not entity_desc:
+        return entity_head
+    if entity_desc.startswith(entity_head):
+        entity_desc = entity_desc[len(entity_head):].strip()
+    return "{}: {}".format(entity_head, entity_desc)
+  
     
 class DataPoint():
     def __init__(self, 
@@ -86,6 +94,10 @@ class DataPoint():
         
         
     def encode_to_dict(self) -> dict:
+        
+        head, head_desc, tail, tail_desc = self.head, self.head_desc, self.tail, self.tail_desc
+        
+        head_text = _create_head_text(head, head_desc)
         
     
         return {'hr_token_ids': None,
