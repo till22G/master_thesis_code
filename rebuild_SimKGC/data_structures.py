@@ -13,12 +13,65 @@ from argparser import args
 tokenizer: AutoTokenizer = None
 
 entity_descriptions = {}
+training_triples = []
+neigborhood_graph = None
 
-def load_entity_descriptions(path) -> None:
+
+class neighborhoodGraph():
+    
+    neighbors = {}
+    
+    
+    def __init__(self) -> None:
+        logger.info("Building neighborhood graph")
+        if not training_triples:
+             # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
+            load_training_triples("../data/FB15k237/train.json")
+            # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
+            
+            print(len(training_triples))
+            
+        for i, item in enumerate(training_triples):
+            if item["head_id"] not in self.neighbors:
+                self.neighbors[item["head_id"]] = set()
+            self.neighbors[item["head_id"]].add(item["tail_id"])
+           
+            if item["tail_id"] not in self.neighbors:
+                self.neighbors[item["tail_id"]] = set()
+            self.neighbors[item["tail_id"]].add(item["head_id"])
+            
+            if item["head_id"] == "/m/06v8s0":
+                print(self.neighbors["/m/06v8s0"])
+        
+        logger.info("Neighborhood graph succesfully build")
+            
+            
+            # still need to remove self from set
+        
+
+def build_neighborhood_graph():
+    global neigborhood_graph
+    neigborhood_graph =  neighborhoodGraph()
+
+def load_training_triples(path) -> None:
     
     assert os.path.exists(path), "Path is invalid"
     assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
     
+    logger.info("Loading training triple to add neigbours from {}".format(path))
+    
+    with open(path, "r", encoding="utf-8") as inflile:
+        data = json.load(inflile)
+    
+    for item in data:
+        training_triples.append(item)
+    
+    
+def load_entity_descriptions(path) -> None:
+    
+    assert os.path.exists(path), "Path is invalid"
+    assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
+
     logger.info("Loading entity descriptions from {}".format(path))
     
     with open (path, "r", encoding="utf-8") as infile:
@@ -121,13 +174,18 @@ class DataPoint():
         
     def encode_to_dict(self) -> dict:
         
+        head_desc, tail_desc = self.head_desc, self.tail_desc
+        
         # still need to code what happens when this is set to true
         if args.use_neighbors:
             # the entity names should be padded with information from neighbour if
             # their own description is to short
-            pass
+            if len(head_desc.split()) < 20:
+                head_desc = " ".join((head_desc, add_neighbor_names(self.head_id, self.tail_id)))
+            if len(tail_desc.split()) < 20:
+                tail_desc = " ".join((tail_desc, add_neighbor_names(self.tail_id, self.head_id)))
                   
-        head_text = _concat_name_desciption(self.head, self.head_desc)
+        head_text = _concat_name_desciption(self.head, head_desc)
         hr_tokens = _tokenize_text(head_text, self.relation)
         t_tokens = _tokenize_text(self.tail)
         h_tokens = _tokenize_text(self.head)
@@ -140,7 +198,17 @@ class DataPoint():
                 'head_token_type_ids': h_tokens["token_type_ids"],
                 'obj': self}
         
+
+# I still need to check this, but I seems that they only build a neighborhood graph 
+# from the training set and also use that for adding neighbors during validation
+def add_neighbor_names(head_id, tail_id):
+    if neigborhood_graph is None:
+        build_neighborhood_graph()
     
+    return ""
+
+
+
 class Dataset(Dataset):
     def __init__(self, path, data_points=None) -> None:
         super().__init__()

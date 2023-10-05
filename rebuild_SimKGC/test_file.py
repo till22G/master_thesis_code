@@ -28,7 +28,7 @@ train_data_loader = torch.utils.data.DataLoader(
 for i, item in enumerate(train_data_loader):
     if i == 0:
         print("item")
-        print(item)
+
 
 
 
