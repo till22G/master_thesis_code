@@ -1,5 +1,6 @@
 import os
 import json
+import torch
 
 from torch.utils.data import Dataset
 from typing import List, Optional
@@ -45,6 +46,7 @@ def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
     tokens = tokenizer(text,
                        text_pair = relation,
                        add_special_tokens = True,
+                       truncation=True,
                        max_length = args.max_number_tokens,
                        return_token_type_ids = True)
     
@@ -120,7 +122,7 @@ class DataPoint():
     def encode_to_dict(self) -> dict:
         
         # still need to code what happens when this is set to true
-        if args.use_neigbors:
+        if args.use_neighbors:
             # the entity names should be padded with information from neighbour if
             # their own description is to short
             pass
@@ -158,7 +160,7 @@ class Dataset(Dataset):
         return len(self.data_points)
     
     def __getitem__(self, index) -> DataPoint:
-        return self.data_points[index]
+        return self.data_points[index].encode_to_dict()
             
 
 def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
@@ -197,20 +199,48 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
             
         return datapoints
     
-def collate_fn(data_batch: List[DataPoint]) -> dict:
+def collate_fn(batch: List[DataPoint]) -> dict:
     
-    hr_token_ids = None
-    hr_mask = None
-    hr_token_type_id = None
-    tail_token_ids = None
-    tail_mask = None
-    tail_token_type_ids = None
+    if tokenizer is None:
+        create_tokenizer()
     
+    hr_token_ids, hr_mask = batch_token_ids_and_mask(
+        [torch.LongTensor(datapoint["hr_token_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id)
     
+    tail_token_ids, tail_mask = batch_token_ids_and_mask(
+        [torch.LongTensor(datapoint["tail_token_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id)
     
-    return {"hr_token_ids" : hr_token_ids,
-            "hr_mask" : hr_mask,
-            "hr_token_type_id" : hr_token_type_id,
-            "tail_token_ids" : tail_token_ids,
-            "tail_mask" : tail_mask,
-            "tail_token_type_ids" : tail_token_type_ids}
+    hr_token_type_ids = batch_token_ids_and_mask (
+        [torch.LongTensor(datapoint["hr_token_type_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id, create_mask = False)
+    
+    tail_token_type_ids = batch_token_ids_and_mask (
+        [torch.LongTensor(datapoint["tail_token_type_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id, create_mask = False)
+
+    return {"batched_hr_token_ids" : hr_token_ids,
+            "batched_hr_mask" : hr_mask,
+            "batched_hr_token_type_id" : hr_token_type_ids,
+            "batched_tail_token_ids" : tail_token_ids,
+            "batched_tail_mask" : tail_mask,
+            "batched_tail_token_type_ids" : tail_token_type_ids}
+    
+
+def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True):
+    max_length = max([item.size(0) for item in data_batch_tensor])
+    num_samples =len(data_batch_tensor)
+    batch = torch.LongTensor(num_samples, max_length).fill_(0)
+    if create_mask:
+        mask = torch.ByteTensor(num_samples, max_length).fill_(0)
+    for i, tensor in enumerate(data_batch_tensor):
+        batch[i, :len(tensor)] = tensor
+        if create_mask:
+            mask[i, :len(tensor)].fill_(1)
+    
+    if create_mask:
+        return batch, mask
+    else:
+        return batch
+    
