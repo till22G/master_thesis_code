@@ -12,47 +12,43 @@ from argparser import args
 
 tokenizer: AutoTokenizer = None
 
-entity_descriptions = {}
+entities = {}
 training_triples = []
 neigborhood_graph = None
 
 
-class neighborhoodGraph():
-    
-    neighbors = {}
-    
-    
+class NeighborhoodGraph():
     def __init__(self) -> None:
-        logger.info("Building neighborhood graph")
+        self.graph = {}
+        # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
+        path = "../data/FB15k237/train.json"
+        # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
+        logger.info("Building neighborhood graph from {}".format(path))
         if not training_triples:
-             # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
-            load_training_triples("../data/FB15k237/train.json")
-            # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
+            load_training_triples(path)
             
-            print(len(training_triples))
-            
-        for i, item in enumerate(training_triples):
-            if item["head_id"] not in self.neighbors:
-                self.neighbors[item["head_id"]] = set()
-            self.neighbors[item["head_id"]].add(item["tail_id"])
+        for item in training_triples:
+            if item["head_id"] not in self.graph:
+                self.graph[item["head_id"]] = set()
+            self.graph[item["head_id"]].add(item["tail_id"])
            
-            if item["tail_id"] not in self.neighbors:
-                self.neighbors[item["tail_id"]] = set()
-            self.neighbors[item["tail_id"]].add(item["head_id"])
-            
-            if item["head_id"] == "/m/06v8s0":
-                print(self.neighbors["/m/06v8s0"])
+            if item["tail_id"] not in self.graph:
+                self.graph[item["tail_id"]] = set()
+            self.graph[item["tail_id"]].add(item["head_id"])
         
         logger.info("Neighborhood graph succesfully build")
             
-            
-            # still need to remove self from set
         
+    def get_neighbors(self, entity_id: str, num_neigbhours: int = 10):
+        neigbours = sorted(self.graph.get(entity_id, set()))
+        return neigbours[:num_neigbhours]
+    
 
 def build_neighborhood_graph():
     global neigborhood_graph
-    neigborhood_graph =  neighborhoodGraph()
-
+    neigborhood_graph =  NeighborhoodGraph()
+    
+    
 def load_training_triples(path) -> None:
     
     assert os.path.exists(path), "Path is invalid"
@@ -67,7 +63,7 @@ def load_training_triples(path) -> None:
         training_triples.append(item)
     
     
-def load_entity_descriptions(path) -> None:
+def load_entities(path) -> None:
     
     assert os.path.exists(path), "Path is invalid"
     assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
@@ -78,9 +74,9 @@ def load_entity_descriptions(path) -> None:
         data = json.load(infile)
             
     for item in data:
-        entity_descriptions[item["entity_id"]] = item["entity_desc"]
+        entities[item["entity_id"]] = item
         
-    logger.info("{} entity descriptinos loaded".format(len(entity_descriptions)))
+    logger.info("{} entity descriptinos loaded".format(len(entities)))
     
 
 def _concat_name_desciption(entity_head: str, entity_desc: str):
@@ -202,11 +198,16 @@ class DataPoint():
 # I still need to check this, but I seems that they only build a neighborhood graph 
 # from the training set and also use that for adding neighbors during validation
 def add_neighbor_names(head_id, tail_id):
+    global neigborhood_graph
     if neigborhood_graph is None:
         build_neighborhood_graph()
+    neighbor_ids = neigborhood_graph.get_neighbors(head_id)
     
-    return ""
-
+    if tail_id in neighbor_ids:
+        neighbor_ids.remove(tail_id)
+    
+    neighbor_names = [entities[entity_id].get("entity", "") for entity_id in neighbor_ids]
+    return " ".join(neighbor_names)
 
 
 class Dataset(Dataset):
@@ -232,9 +233,9 @@ class Dataset(Dataset):
             
 
 def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
-        global entity_descriptions
-        if not entity_descriptions:
-            load_entity_descriptions("../data/fb15k237/entities.json")
+        global entities
+        if not entities:
+            load_entities("../data/fb15k237/entities.json")
         
         with open(path, "r", encoding="utf-8") as infile:
             data = json.load(infile)
@@ -249,18 +250,18 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
         for item in data:
             datapoints.append(DataPoint(item["head_id"],
                                         item["head"],
-                                        entity_descriptions[item["head_id"]],
+                                        entities[item["head_id"]].get("entity_desc", ""),
                                         item["relation"], 
                                         item["tail_id"],
-                                        entity_descriptions[item["tail_id"]],
+                                        entities[item["tail_id"]].get("entity_desc", ""),
                                         item["tail"]))
             if backward_triples:
                 datapoints.append(DataPoint(item["tail_id"],
                                             item["tail"],
-                                            entity_descriptions[item["tail_id"]],
+                                            entities[item["tail_id"]].get("entity_desc", ""),
                                             " ".join(("inverse", item["relation"])), 
                                             item["head_id"],
-                                            entity_descriptions[item["head_id"]],
+                                            entities[item["head_id"]].get("entity_desc", ""),
                                             item["head"]))
                 
         logger.info("Created dataset with {} datapoints".format(len(datapoints)))
@@ -290,7 +291,7 @@ def collate_fn(batch: List[DataPoint]) -> dict:
 
     return {"batched_hr_token_ids" : hr_token_ids,
             "batched_hr_mask" : hr_mask,
-            "batched_hr_token_type_id" : hr_token_type_ids,
+            "batched_hr_token_type_ids" : hr_token_type_ids,
             "batched_tail_token_ids" : tail_token_ids,
             "batched_tail_mask" : tail_mask,
             "batched_tail_token_type_ids" : tail_token_type_ids}
