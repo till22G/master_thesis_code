@@ -12,6 +12,7 @@ from argparser import args
 from  data_structures import collate_fn
 
 from tqdm import tqdm
+from model import CustomModel
 import time
 
 file_path = "../data/FB15k237/train.json"
@@ -22,16 +23,19 @@ dataset = Dataset(file_path)
  
 train_data_loader = torch.utils.data.DataLoader(
     dataset,
-    batch_size=3,
+    batch_size=10,
     shuffle=True,
     collate_fn=collate_fn,
     pin_memory=True
 )
 
+model = CustomModel(args)
 count = 0
 for i, item in enumerate(tqdm(train_data_loader)):
+    model(**item)
+    
     count += 1
-    if count == 3:
+    if count == 1:
         break
 
     

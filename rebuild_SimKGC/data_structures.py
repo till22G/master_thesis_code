@@ -207,7 +207,6 @@ def add_neighbor_names(head_id, tail_id):
         neighbor_ids.remove(tail_id)
     
     neighbor_names = [entities[entity_id].get("entity", "") for entity_id in neighbor_ids]
-    print(neighbor_names)
     return " ".join(neighbor_names)
 
 
@@ -292,7 +291,7 @@ def collate_fn(batch: List[DataPoint]) -> dict:
 
     return {"batched_hr_token_ids" : hr_token_ids,
             "batched_hr_mask" : hr_mask,
-            "batched_hr_token_type_id" : hr_token_type_ids,
+            "batched_hr_token_type_ids" : hr_token_type_ids,
             "batched_tail_token_ids" : tail_token_ids,
             "batched_tail_mask" : tail_mask,
             "batched_tail_token_type_ids" : tail_token_type_ids}
