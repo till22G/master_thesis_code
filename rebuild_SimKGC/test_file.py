@@ -11,6 +11,9 @@ from data_structures import _concat_name_desciption
 from argparser import args
 from  data_structures import collate_fn
 
+from tqdm import tqdm
+import time
+
 file_path = "../data/FB15k237/train.json"
 assert os.path.exists(file_path), "Invalid path"
 
@@ -25,10 +28,14 @@ train_data_loader = torch.utils.data.DataLoader(
     pin_memory=True
 )
 
-for i, item in enumerate(train_data_loader):
-    if i == 0:
-        print("item")
+count = 0
+for i, item in enumerate(tqdm(train_data_loader)):
+    count += 1
+    if count == 3:
+        break
 
+    
+        
 
 
 
