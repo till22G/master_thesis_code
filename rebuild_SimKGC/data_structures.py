@@ -15,7 +15,42 @@ tokenizer: AutoTokenizer = None
 entities = {}
 training_triples = []
 neigborhood_graph = None
+training_triples_class = None
 
+
+class TrainingTriplets():
+    def __init__(self, path) -> None:
+        self.training_triples = []
+        self.hr2tails = {}
+        
+        self._load_training_triplets(path)
+        
+    def _load_training_triplets(self, path) -> None:
+        
+        assert os.path.exists(path), "Path is invalid"
+        assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
+        
+        # logger.info("Loading training triple to add neigbours from {}".format(path))
+        
+        with open(path, "r", encoding="utf-8") as inflile:
+            data = json.load(inflile)
+        
+        for item in data:
+            self.training_triples.append(item)
+            key = (item["head_id"], item["relation"])
+            if key not in self.hr2tails:
+                self.hr2tails[key] = set()
+            self.hr2tails[key].add(item["tail_id"])
+            
+    def get_neighbors(self, head_id: str, relation: str) -> set:
+        return self.hr2tails.get((head_id, relation), None)
+    
+    def get_triplet(self, idx: int) -> dict:
+        return self.training_triples[idx]
+    
+    def get_triplet_list(self) -> list: 
+        return training_triples
+        
 
 class NeighborhoodGraph():
     def __init__(self) -> None:
@@ -24,10 +59,14 @@ class NeighborhoodGraph():
         path = "../data/FB15k237/train.json"
         # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
         logger.info("Building neighborhood graph from {}".format(path))
-        if not training_triples:
-            load_training_triples(path)
+        """ if not training_triples:
+            load_training_triples(path) """
             
-        for item in training_triples:
+        global training_triples_class
+        if training_triples_class is None:
+            training_triples_class = TrainingTriplets(path)
+            
+        for item in training_triples_class.get_triplet_list():
             if item["head_id"] not in self.graph:
                 self.graph[item["head_id"]] = set()
             self.graph[item["head_id"]].add(item["tail_id"])
@@ -49,18 +88,6 @@ def build_neighborhood_graph():
     neigborhood_graph =  NeighborhoodGraph()
     
     
-def load_training_triples(path) -> None:
-    
-    assert os.path.exists(path), "Path is invalid"
-    assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
-    
-    logger.info("Loading training triple to add neigbours from {}".format(path))
-    
-    with open(path, "r", encoding="utf-8") as inflile:
-        data = json.load(inflile)
-    
-    for item in data:
-        training_triples.append(item)
     
     
 def load_entities(path) -> None:
