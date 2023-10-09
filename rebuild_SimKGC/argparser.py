@@ -20,5 +20,9 @@ parser.add_argument("--use-neighbors", action="store_false",
                     the descriptions are short (< 20 tokens)")
 parser.add_argument("--use-descriptions", action="store_true",
                     help="Use the entity descriptions in the encodings")
+parser.add_argument("--t", default=0.05, type=float, 
+                    help="temperature parameter for loss function")
+parser.add_argument("--finetune-t", action="store_true",
+                    help="set whether t should be finetuned during training or not")
 
 args = parser.parse_args()

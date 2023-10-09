@@ -11,6 +11,8 @@ class CustomModel(nn.Module):
         
         self.args = args
         
+        self.log_inv_t = torch.nn.Parameter(torch.tensor(1.0 / args.t).log(), requires_grad=args.finetune_t)
+        
         self.bert_hr = AutoModel.from_pretrained(args.pretrained_model) # create bert model for relation aware embeddings
         self.bert_t = AutoModel.from_pretrained(args.pretrained_model) # create bert model for tail entity embeddings
         
