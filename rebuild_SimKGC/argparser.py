@@ -24,5 +24,10 @@ parser.add_argument("--t", default=0.05, type=float,
                     help="temperature parameter for loss function")
 parser.add_argument("--finetune-t", action="store_true",
                     help="set whether t should be finetuned during training or not")
-
+parser.add_argument("additive-margin", default=0.02, type=float,
+                    help="set additive margin in InfoNCE loss function")
+parser.add_argument("--batch-size", default=1024, type=int,
+                    help="set the mini-batch size for training")
+parser.add_argument("pre-batch", default=0, type=int,
+                    help="number of pre-batches used to compute pre-batch negatives")
 args = parser.parse_args()
