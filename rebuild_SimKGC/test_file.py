@@ -32,8 +32,9 @@ train_data_loader = torch.utils.data.DataLoader(
 model = CustomModel(args)
 count = 0
 for i, item in enumerate(tqdm(train_data_loader)):
-    model(**item)
-    
+    out = model(**item)
+    print(out["hr_vec"].shape)
+    print(out["t_vec"].shape)
     count += 1
     if count == 1:
         break

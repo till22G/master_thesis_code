@@ -52,3 +52,13 @@ class CustomModel(nn.Module):
         return {"hr_vec" : hr_vec,
                 "t_vec" : t_vec}
         
+        
+    def compute_logits(self, encodings: dict, batch_data: dict ) -> dict: 
+        hr_vec, t_vec = encodings["hr_vec"], encodings["t_vec"]
+        
+        logits = hr_vec.mm(t_vec) # calculate cos-similarity
+        if self.training():
+            logits -= torch.zeros(logits.shape).fill_diagonal_(self.add_margin).to(logits.device) # subtract margin
+        logits *= self.log_inv_t.exp() # scale with temeratur parameter
+
+        
