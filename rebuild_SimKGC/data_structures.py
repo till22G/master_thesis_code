@@ -18,14 +18,14 @@ neigborhood_graph = None
 training_triples_class = None
 
 
-class TrainingTriplets():
+class TrainingTripels():
     def __init__(self, path) -> None:
         self.training_triples = []
         self.hr2tails = {}
         
-        self._load_training_triplets(path)
+        self._load_training_tripels(path)
         
-    def _load_training_triplets(self, path) -> None:
+    def _load_training_tripels(self, path) -> None:
         
         assert os.path.exists(path), "Path is invalid"
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
@@ -64,7 +64,7 @@ class NeighborhoodGraph():
             
         global training_triples_class
         if training_triples_class is None:
-            training_triples_class = TrainingTriplets(path)
+            training_triples_class = TrainingTripels(path)
             
         for item in training_triples_class.get_triplet_list():
             if item["head_id"] not in self.graph:
