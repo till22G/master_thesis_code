@@ -352,6 +352,10 @@ def collate_fn(batch: List[DataPoint]) -> dict:
         [torch.LongTensor(datapoint["tail_token_ids"]) for datapoint in batch],
         pad_token_id = tokenizer.pad_token_id)
     
+    head_token_ids, head_mask = batch_token_ids_and_mask(
+        [torch.LongTensor(datapoint["head_token_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id)
+    
     hr_token_type_ids = batch_token_ids_and_mask (
         [torch.LongTensor(datapoint["hr_token_type_ids"]) for datapoint in batch],
         pad_token_id = tokenizer.pad_token_id, create_mask = False)
@@ -359,6 +363,12 @@ def collate_fn(batch: List[DataPoint]) -> dict:
     tail_token_type_ids = batch_token_ids_and_mask (
         [torch.LongTensor(datapoint["tail_token_type_ids"]) for datapoint in batch],
         pad_token_id = tokenizer.pad_token_id, create_mask = False)
+    
+    head_token_type_ids = batch_token_ids_and_mask (
+        [torch.LongTensor(datapoint["head_token_type_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id, create_mask = False)
+    
+    
 
     return {"batched_hr_token_ids" : hr_token_ids,
             "batched_hr_mask" : hr_mask,
@@ -366,6 +376,9 @@ def collate_fn(batch: List[DataPoint]) -> dict:
             "batched_tail_token_ids" : tail_token_ids,
             "batched_tail_mask" : tail_mask,
             "batched_tail_token_type_ids" : tail_token_type_ids,
+            "batched_head_token_ids" : head_token_ids,
+            "batched_head_mask" : head_mask,
+            "batched_head_token_type_ids" :head_token_type_ids,
             "batched_datapoints": batch}
     
 
