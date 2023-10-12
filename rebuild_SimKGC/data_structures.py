@@ -18,6 +18,38 @@ neigborhood_graph = None
 training_triples_class = None
 
 
+class EntityDict():
+    def __init__(self, path) -> None:
+        self.entities = []
+        self.id2entity = {}
+        self.entity2idx = {}
+        
+        self._load_entity_dict(path)
+    
+    def _load_entity_dict(self, path):
+        assert os.path.exists(path), "Path is invalid"
+        assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
+        
+        with open(path, "r", encoding="utf8") as infile:
+            data = json.load(infile)
+            
+        self.entities = data    
+        self.id2entity = {entity["entity_id"]: entity for entity in data}
+        self.entity2idx = {entity["entity_id"]: i for i, entity in enumerate(data)}
+    
+    def entity_to_idx(self, entity_id: str) -> int:
+        return self.entity2idx[entity_id]
+    
+    def get_entity_by_id(self, entity_id: str) -> dict:
+        return self.id2entity[entity_id]
+    
+    def get_entity_by_idx(self, entity_idx: int) -> dict:
+        return self.entities[entity_idx]
+    
+    def __len__(self):
+        return len(self.entities)
+
+
 class TrainingTripels():
     def __init__(self, path) -> None:
         self.training_triples = []
@@ -321,7 +353,8 @@ def collate_fn(batch: List[DataPoint]) -> dict:
             "batched_hr_token_type_ids" : hr_token_type_ids,
             "batched_tail_token_ids" : tail_token_ids,
             "batched_tail_mask" : tail_mask,
-            "batched_tail_token_type_ids" : tail_token_type_ids}
+            "batched_tail_token_type_ids" : tail_token_type_ids,
+            "batched_datapoints": batch}
     
 
 def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True):
