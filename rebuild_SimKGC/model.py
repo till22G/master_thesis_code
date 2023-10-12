@@ -18,7 +18,19 @@ class CustomModel(nn.Module):
         self.add_margin = args.additive_margin
         self.batch_size = args.batch_size
         self.pre_batch = args.pre_batch
+        self.pre_batch_weight = args.pre_batch_weight
         self.use_self_negatives = args.use_self_negatives
+        
+        self.offset = 0
+        num_pre_batch_vectors = max(1, self.pre_batch) * self.batch_size
+        self.pre_batch_datapoints = [None] * num_pre_batch_vectors
+        
+        # register a buffer with the size of all pre=batch logits held (batch-size * pre-batches)
+        # times the size of the last hidden layer (size of embedding)
+        random_vector = torch.randn(num_pre_batch_vectors, self.config.hidden_size)
+        self.register_buffer("pre_batch_vectors",
+                             nn.functional.normalize(random_vector, dim=1),
+                             persistent=False)
         
         self.bert_hr = AutoModel.from_pretrained(args.pretrained_model) # create bert model for relation aware embeddings
         self.bert_t = AutoModel.from_pretrained(args.pretrained_model) # create bert model for tail entity embeddings
@@ -97,5 +109,7 @@ class CustomModel(nn.Module):
                 "hr_vector" : hr_vec.detach(),
                 "tail_vector" : t_vec.detach()}
         
-    def _compute_pre_batch_logits(hr_vec, t_vec, batch_data):
-        pass
+    def _compute_pre_batch_logits(self, hr_vec, t_vec, batch_data):
+        batch_datapoints = batch_data["batched_datapoints"]
+        pre_batch_logits = hr_vec.mm(self.pre_batch_vectors.clone().t())
+        pre_batch_logits *= self.pre_batch_weight * self.log_inv_t.exp()

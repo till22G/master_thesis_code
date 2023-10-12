@@ -33,5 +33,7 @@ parser.add_argument("--pre-batch", default=0, type=int,
 parser.add_argument("--use-inverse-triples", action="store_false",
                     help="specify whether inverse triple should be loaded to the data or not")
 parser.add_argument("--use-self-negatives", action="store_false",
-                    help="tooge whether self negatives are used for training or not")
+                    help="toggle whether self negatives are used for training or not")
+parser.add_argument("--pre-batch-weight", default=0.5, type=float,
+                    help="set the weight of the pre-batch logits")
 args = parser.parse_args()
