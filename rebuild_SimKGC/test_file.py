@@ -15,15 +15,7 @@ from tqdm import tqdm
 from model import CustomModel
 import time
 
-path = "../data/FB15k237/entities.json"
-entity_dict = EntityDict(path)
-entity_id = entity_dict.get_entity_by_idx(5643)["entity_id"]
-entity_idx = entity_dict.entity_to_idx(entity_id)
 
-
-training_triples_class = TrainingTripels("../data/FB15k237/train.json")
-print(training_triples_class.get_neighbors("/m/04w391", "inverse participant popstra base dated celebrity popstra base"))
-print()
 
 file_path = "../data/FB15k237/train.json"
 assert os.path.exists(file_path), "Invalid path"

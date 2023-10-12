@@ -32,4 +32,6 @@ parser.add_argument("--pre-batch", default=0, type=int,
                     help="number of pre-batches used to compute pre-batch negatives")
 parser.add_argument("--use-inverse-triples", action="store_false",
                     help="specify whether inverse triple should be loaded to the data or not")
+parser.add_argument("--use-self-negatives", action="store_false",
+                    help="tooge whether self negatives are used for training or not")
 args = parser.parse_args()

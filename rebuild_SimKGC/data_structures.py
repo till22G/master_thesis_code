@@ -61,7 +61,7 @@ class TrainingTripels():
         assert os.path.exists(path), "Path is invalid"
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
-        # logger.info("Loading training triple to add neigbours from {}".format(path))
+        logger.info("Loading training triples from {}".format(path))
         
         with open(path, "r", encoding="utf-8") as inflile:
             data = json.load(inflile)
@@ -83,10 +83,8 @@ class TrainingTripels():
                 self.hr2tails[key] = set()
             self.hr2tails[key].add(item["tail_id"])
             
-        print("hr2tails")
-        print(len(self.hr2tails))
-        print("training_triples")
-        print(len(self.training_triples))
+        logger.info("Loaded {} training triples. Added inverse triples: {}".format(len(self.training_triples), args.use_inverse_triples))
+            
             
     def get_neighbors(self, head_id: str, relation: str) -> set:
         return self.hr2tails.get((head_id, relation), set())

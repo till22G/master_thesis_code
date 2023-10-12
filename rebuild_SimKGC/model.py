@@ -54,16 +54,37 @@ class CustomModel(nn.Module):
         
         return {"hr_vec" : hr_vec,
                 "t_vec" : t_vec}
-        
-        
+    
     def compute_logits(self, encodings: dict, batch_data: dict) -> dict: 
         hr_vec, t_vec = encodings["hr_vec"], encodings["t_vec"]
+        labels = torch.arange(hr_vec.size()).to(hr_vec.device)
         
         logits = hr_vec.mm(t_vec.t()) # calculate cos-similarity
         if self.training:
             logits -= torch.zeros(logits.shape).fill_diagonal_(self.add_margin).to(logits.device) # subtract margin
         logits *= self.log_inv_t.exp() # scale with temeratur parameter
     
-
         batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
         triplet_mask = construct_triplet_mask(batched_datapoints)
+        
+        if triplet_mask is not None:
+            logits.masked_fill(triplet_mask, -1e4)
+
+        # add pre batch logits here
+        if self.pre_batch > 0 and self.training:
+            pre_batch_logits = self._compute_pre_batch_logits(hr_vec, t_vec, batch_data)
+            logits = torch.cat([logits, pre_batch_logits], dim=1)
+                        
+        # add self negatives here
+        if self.use_self_negatives and self.training:
+            hr_vec, head_vec = encodings["hr_vector"]
+        
+
+        return {"logits" : logits,
+                "labels" : labels,
+                "inv_t" : self.log_inv_t.detach().exp(),
+                "hr_vector" : hr_vec.detach(),
+                "tail_vector" : t_vec.detach()}
+        
+    def _compute_pre_batch_logits(hr_vec, t_vec, batch_data):
+        pass
