@@ -13,7 +13,6 @@ from argparser import args
 tokenizer: AutoTokenizer = None
 
 entities = {}
-training_triples = []
 neigborhood_graph = None
 training_triples_class = None
 
@@ -66,22 +65,37 @@ class TrainingTripels():
         
         with open(path, "r", encoding="utf-8") as inflile:
             data = json.load(inflile)
-        
+                
         for item in data:
             self.training_triples.append(item)
+            if args.use_inverse_triples:
+                inv_item = {"head_id": item["tail_id"],
+                            "head" : item["tail"],
+                            "relation": " ".join(("inverse", item["relation"])),
+                            "tail_id": item["head_id"],
+                            "tail" : item["head"]
+                }
+                self.training_triples.append(inv_item)
+                
+        for item in self.training_triples:
             key = (item["head_id"], item["relation"])
             if key not in self.hr2tails:
                 self.hr2tails[key] = set()
             self.hr2tails[key].add(item["tail_id"])
             
+        print("hr2tails")
+        print(len(self.hr2tails))
+        print("training_triples")
+        print(len(self.training_triples))
+            
     def get_neighbors(self, head_id: str, relation: str) -> set:
-        return self.hr2tails.get((head_id, relation), None)
+        return self.hr2tails.get((head_id, relation), set())
     
     def get_triplet(self, idx: int) -> dict:
         return self.training_triples[idx]
     
     def get_triplet_list(self) -> list: 
-        return training_triples
+        return self.training_triples
         
 
 class NeighborhoodGraph():
@@ -279,7 +293,7 @@ class Dataset(Dataset):
         
         if data_points is None:
             self.data_points = []
-            self.data_points = load_data(self.path)
+            self.data_points = load_data(self.path, inverse_triples=args.use_inverse_triples)
             
         else:
             data_points = data_points
@@ -291,7 +305,7 @@ class Dataset(Dataset):
         return self.data_points[index].encode_to_dict()
             
 
-def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
+def load_data(path: str, inverse_triples: bool = True) -> List[DataPoint]:
         global entities
         if not entities:
             load_entities("../data/fb15k237/entities.json")
@@ -302,7 +316,7 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
         logger.info("Load {} datapoints from {}".format(len(data), path))
         
             
-        if backward_triples:
+        if inverse_triples:
             logger.info("Adding inverse triples")
             
         datapoints = []
@@ -314,7 +328,7 @@ def load_data(path: str, backward_triples: bool = True) -> List[DataPoint]:
                                         item["tail_id"],
                                         entities[item["tail_id"]].get("entity_desc", ""),
                                         item["tail"]))
-            if backward_triples:
+            if inverse_triples:
                 datapoints.append(DataPoint(item["tail_id"],
                                             item["tail"],
                                             entities[item["tail_id"]].get("entity_desc", ""),
@@ -372,4 +386,3 @@ def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True
         return batch, mask
     else:
         return batch
-    

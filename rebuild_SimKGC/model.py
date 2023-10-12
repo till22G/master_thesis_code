@@ -1,6 +1,9 @@
 import torch.nn as nn
 import torch
+
 from transformers import AutoModel, AutoTokenizer
+
+from triplet_mask import construct_triplet_mask
 
 def build_model(args) -> nn.Module:
     return CustomModel(args)
@@ -53,12 +56,14 @@ class CustomModel(nn.Module):
                 "t_vec" : t_vec}
         
         
-    def compute_logits(self, encodings: dict, batch_data: dict ) -> dict: 
+    def compute_logits(self, encodings: dict, batch_data: dict) -> dict: 
         hr_vec, t_vec = encodings["hr_vec"], encodings["t_vec"]
         
-        logits = hr_vec.mm(t_vec) # calculate cos-similarity
-        if self.training():
+        logits = hr_vec.mm(t_vec.t()) # calculate cos-similarity
+        if self.training:
             logits -= torch.zeros(logits.shape).fill_diagonal_(self.add_margin).to(logits.device) # subtract margin
         logits *= self.log_inv_t.exp() # scale with temeratur parameter
+    
 
-        
+        batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
+        triplet_mask = construct_triplet_mask(batched_datapoints)
