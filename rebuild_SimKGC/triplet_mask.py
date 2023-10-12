@@ -35,3 +35,11 @@ def construct_triplet_mask(rows: List[DataPoint], cols: List = None) -> torch.te
                 triplet_mask[i][j] = True
 
     return triplet_mask
+
+def construct_self_negative_mask(datapoints: List[DataPoint]) -> torch.tensor:
+    self_mask = torch.zeros(len(datapoints))
+    for i, item in enumerate(datapoints):
+        neighbors = training_triples_class.get_neighbors(item.get_head_id(), item.get_relation())
+        if item.get_head_id() in neighbors:
+            self_mask[i] = 1
+    return self_mask.bool()

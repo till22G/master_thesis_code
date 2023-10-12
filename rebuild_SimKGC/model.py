@@ -3,7 +3,7 @@ import torch
 
 from transformers import AutoModel, AutoTokenizer
 
-from triplet_mask import construct_triplet_mask
+from triplet_mask import construct_triplet_mask, construct_self_negative_mask
 
 def build_model(args) -> nn.Module:
     return CustomModel(args)
@@ -18,6 +18,7 @@ class CustomModel(nn.Module):
         self.add_margin = args.additive_margin
         self.batch_size = args.batch_size
         self.pre_batch = args.pre_batch
+        self.use_self_negatives = args.use_self_negatives
         
         self.bert_hr = AutoModel.from_pretrained(args.pretrained_model) # create bert model for relation aware embeddings
         self.bert_t = AutoModel.from_pretrained(args.pretrained_model) # create bert model for tail entity embeddings
@@ -64,7 +65,7 @@ class CustomModel(nn.Module):
     
     def compute_logits(self, encodings: dict, batch_data: dict) -> dict: 
         hr_vec, t_vec = encodings["hr_vec"], encodings["t_vec"]
-        labels = torch.arange(hr_vec.size()).to(hr_vec.device)
+        labels = torch.arange(hr_vec.size(0)).to(hr_vec.device)
         
         logits = hr_vec.mm(t_vec.t()) # calculate cos-similarity
         if self.training:
@@ -84,9 +85,12 @@ class CustomModel(nn.Module):
                         
         # add self negatives here
         if self.use_self_negatives and self.training:
-            hr_vec, head_vec = encodings["hr_vector"], encodings["h_vec"]
-        
-
+            hr_vec, head_vec = encodings["hr_vec"], encodings["h_vec"]
+            self_neg_logits = torch.sum(hr_vec * head_vec, dim=1) * self.log_inv_t.exp()
+            self_neg_mask = construct_self_negative_mask(batched_datapoints)
+            self_neg_logits = self_neg_logits.masked_fill(self_neg_mask, -1e4)
+            logits = torch.cat([logits, self_neg_logits.unsqueeze(1)], dim=1)
+            
         return {"logits" : logits,
                 "labels" : labels,
                 "inv_t" : self.log_inv_t.detach().exp(),
