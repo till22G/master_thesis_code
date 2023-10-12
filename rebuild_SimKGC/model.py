@@ -40,7 +40,8 @@ class CustomModel(nn.Module):
         return output
         
     def forward(self, batched_hr_token_ids, batched_hr_mask, batched_hr_token_type_ids,
-                batched_tail_token_ids, batched_tail_mask, batched_tail_token_type_ids, **kwargs): 
+                      batched_tail_token_ids, batched_tail_mask, batched_tail_token_type_ids,
+                      batched_head_token_ids, batched_head_mask, batched_head_token_type_ids, **kwargs): 
 
         hr_vec = self._encode(self.bert_hr,
                               batched_hr_token_ids,
@@ -52,8 +53,14 @@ class CustomModel(nn.Module):
                              batched_tail_mask,
                              batched_tail_token_type_ids)
         
+        h_vec = self._encode(self.bert_t,
+                             batched_head_token_ids,
+                             batched_head_mask,
+                             batched_head_token_type_ids)
+        
         return {"hr_vec" : hr_vec,
-                "t_vec" : t_vec}
+                "t_vec" : t_vec,
+                "h_vec" : h_vec}
     
     def compute_logits(self, encodings: dict, batch_data: dict) -> dict: 
         hr_vec, t_vec = encodings["hr_vec"], encodings["t_vec"]
@@ -77,7 +84,7 @@ class CustomModel(nn.Module):
                         
         # add self negatives here
         if self.use_self_negatives and self.training:
-            hr_vec, head_vec = encodings["hr_vector"]
+            hr_vec, head_vec = encodings["hr_vector"], encodings["h_vec"]
         
 
         return {"logits" : logits,
