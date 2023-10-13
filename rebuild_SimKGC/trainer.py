@@ -14,10 +14,10 @@ class CustomTrainer:
         # use gpus if possble
         if torch.cuda.device_count() > 1:
             self.model = torch.nn.DataParallel(self.model)
-            logger.info("{} cuda devices found. GPUs will be used")
+            logger.info("{} cuda devices found. GPUs will be used".format(torch.cuda.device_count()))
         elif torch.cuda.device_count() == 1:
             self.model.cuda()
-            logger.info("{} cuda devices found. GPU will be used")
+            logger.info("{} cuda device found. GPU will be used".format(torch.cuda.device_count()))
         else: 
             logger.info("No GPU available. CPU will be used")
         
