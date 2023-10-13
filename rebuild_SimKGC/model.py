@@ -4,8 +4,10 @@ import torch
 from transformers import AutoModel, AutoConfig
 
 from triplet_mask import construct_triplet_mask, construct_self_negative_mask
+from logger import logger
 
 def build_model(args) -> nn.Module:
+    logger.info("Building model")
     return CustomModel(args)
 
 class CustomModel(nn.Module):
@@ -43,7 +45,7 @@ class CustomModel(nn.Module):
                        return_dict=True)
         
         last_hidden_states = output.last_hidden_state
-        
+ 
         # perform mean pooling 
         mask_exp = input_mask.unsqueeze(-1).expand(last_hidden_states.size()).long()
         sum_masked_output = torch.sum(last_hidden_states * mask_exp, 1)

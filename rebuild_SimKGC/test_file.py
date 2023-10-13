@@ -14,9 +14,15 @@ from  data_structures import collate_fn
 from tqdm import tqdm
 from model import CustomModel
 import time
+from trainer import CustomTrainer
 
 
 
+trainer = CustomTrainer(args)
+
+
+
+""" 
 file_path = "../data/FB15k237/train.json"
 assert os.path.exists(file_path), "Invalid path"
 
@@ -39,7 +45,7 @@ for i, item in enumerate(tqdm(train_data_loader)):
     
     count += 1
     if count == 3:
-        break
+        break """
 
 """ t1 = "head"
 t2 = "head desc"
