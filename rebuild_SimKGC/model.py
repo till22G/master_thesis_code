@@ -121,7 +121,6 @@ class CustomModel(nn.Module):
         
         self.pre_batch_vectors[self.offset:(self.offset + self.batch_size)] = t_vec.data.clone()
         self.pre_batch_datapoints[self.offset:(self.offset + self.batch_size)] = batched_datapoints
-        print(batched_datapoints)
         self.offset = (self.offset + self.batch_size) % len(self.pre_batch_datapoints)
 
         return pre_batch_logits
