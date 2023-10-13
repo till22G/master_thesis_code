@@ -36,4 +36,12 @@ parser.add_argument("--use-self-negatives", action="store_false",
                     help="toggle whether self negatives are used for training or not")
 parser.add_argument("--pre-batch-weight", default=0.5, type=float,
                     help="set the weight of the pre-batch logits")
+parser.add_argument("--learning-rate", default=2e-5, type=float,
+                    help="set the initial learning rate for the training")
+parser.add_argument("--weight-decay",default=1e-4,type=float,
+                    help="set the weight decay for the learning rate during training")
+parser.add_argument("--num-epochs", default=0, type=int,
+                    help="set the number of epochs for training")
+parser.add_argument("--warmup", default=400, type=int,
+                    help="set the number of warmup steps for the training")
 args = parser.parse_args()
