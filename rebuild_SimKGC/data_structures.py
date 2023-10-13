@@ -26,7 +26,7 @@ class EntityDict():
         self._load_entity_dict(path)
     
     def _load_entity_dict(self, path):
-        assert os.path.exists(path), "Path is invalid"
+        assert os.path.exists(path), "Path is invalid {}:".format(path)
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
         with open(path, "r", encoding="utf8") as infile:
@@ -58,7 +58,7 @@ class TrainingTripels():
         
     def _load_training_tripels(self, path) -> None:
         
-        assert os.path.exists(path), "Path is invalid"
+        assert os.path.exists(path), "Path is invalid {}:".format(path)
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
         logger.info("Loading training triples from {}".format(path))
@@ -97,14 +97,10 @@ class TrainingTripels():
         
 
 class NeighborhoodGraph():
-    def __init__(self) -> None:
+    def __init__(self, path) -> None:
         self.graph = {}
-        # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
-        path = "../data/FB15k237/train.json"
-        # !!!!!!!!!!!!!! remember to change path !!!!!!!!!!!!!!!!!!!!!!1
+
         logger.info("Building neighborhood graph from {}".format(path))
-        """ if not training_triples:
-            load_training_triples(path) """
             
         global training_triples_class
         if training_triples_class is None:
@@ -129,14 +125,14 @@ class NeighborhoodGraph():
 
 def build_neighborhood_graph():
     global neigborhood_graph
-    neigborhood_graph =  NeighborhoodGraph()
+    neigborhood_graph =  NeighborhoodGraph(args.train_path)
     
     
     
     
 def load_entities(path) -> None:
     
-    assert os.path.exists(path), "Path is invalid"
+    assert os.path.exists(path), "Path is invalid: {}".format(path)
     assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
 
     logger.info("Loading entity descriptions from {}".format(path))
@@ -286,7 +282,7 @@ class Dataset(Dataset):
         super().__init__()
         
         self.path = path 
-        assert os.path.exists(self.path), "Path is invalid"
+        assert os.path.exists(self.path), "Path is invalid: {}".format(path)
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
         if data_points is None:
