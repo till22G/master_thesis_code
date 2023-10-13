@@ -302,7 +302,7 @@ class Dataset(Dataset):
 def load_data(path: str, inverse_triples: bool = True) -> List[DataPoint]:
         global entities
         if not entities:
-            load_entities("../data/fb15k237/entities.json")
+            load_entities(os.path.join(os.path.dirname(args.train_path), "entities.json"))
         
         with open(path, "r", encoding="utf-8") as infile:
             data = json.load(infile)
