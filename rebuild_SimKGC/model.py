@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModel, AutoConfig
 
 from triplet_mask import construct_triplet_mask, construct_self_negative_mask
 
@@ -20,6 +20,7 @@ class CustomModel(nn.Module):
         self.pre_batch = args.pre_batch
         self.pre_batch_weight = args.pre_batch_weight
         self.use_self_negatives = args.use_self_negatives
+        self.config = AutoConfig.from_pretrained(args.pretrained_model)
         
         self.offset = 0
         num_pre_batch_vectors = max(1, self.pre_batch) * self.batch_size
@@ -110,6 +111,17 @@ class CustomModel(nn.Module):
                 "tail_vector" : t_vec.detach()}
         
     def _compute_pre_batch_logits(self, hr_vec, t_vec, batch_data):
-        batch_datapoints = batch_data["batched_datapoints"]
+        batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
         pre_batch_logits = hr_vec.mm(self.pre_batch_vectors.clone().t())
         pre_batch_logits *= self.pre_batch_weight * self.log_inv_t.exp()
+
+        if self.pre_batch_datapoints[-1] is not None:
+            pre_batch_triplet_mask = construct_triplet_mask(batched_datapoints, self.pre_batch_datapoints).to(hr_vec.device)
+            pre_batch_logits.masked_fill(pre_batch_triplet_mask, -1e4)
+        
+        self.pre_batch_vectors[self.offset:(self.offset + self.batch_size)] = t_vec.data.clone()
+        self.pre_batch_datapoints[self.offset:(self.offset + self.batch_size)] = batched_datapoints
+        print(batched_datapoints)
+        self.offset = (self.offset + self.batch_size) % len(self.pre_batch_datapoints)
+
+        return pre_batch_logits

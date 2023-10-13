@@ -7,7 +7,7 @@ from data_structures import DataPoint, TrainingTripels, EntityDict
 training_triples_class = TrainingTripels("../data/FB15k237/train.json")
 entity_dict = EntityDict("../data/FB15k237/entities.json")
 
-def construct_triplet_mask(rows: List[DataPoint], cols: List = None) -> torch.tensor:
+def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) -> torch.tensor:
     num_rows = len(rows)
     num_cols = num_rows if cols is None else len(cols)
             

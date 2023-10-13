@@ -25,7 +25,7 @@ dataset = Dataset(file_path)
  
 train_data_loader = torch.utils.data.DataLoader(
     dataset,
-    batch_size=30,
+    batch_size=10,
     shuffle=True,
     collate_fn=collate_fn,
     pin_memory=True
@@ -38,7 +38,7 @@ for i, item in enumerate(tqdm(train_data_loader)):
     model.compute_logits(encodings=out, batch_data=item)
     
     count += 1
-    if count == 1:
+    if count == 3:
         break
 
 """ t1 = "head"
