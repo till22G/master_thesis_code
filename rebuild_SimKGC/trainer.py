@@ -34,7 +34,7 @@ class CustomTrainer:
         train_dataset = Dataset(self.args.train_path)
         valid_dataset = Dataset(self.args.valid_path)
         
-         # get parameters
+        # get parameters
         assert self.args.batch_size > 0, "Batch size must be larger than 0"
         num_training_steps = self.args.num_epochs * len(train_dataset) // self.args.batch_size
         args.warmup = min(self.args.warmup, num_training_steps // 10)
@@ -44,16 +44,18 @@ class CustomTrainer:
         
         self.train_data_loader = torch.utils.data.DataLoader(
             train_dataset,
-            batch_size=1,
+            batch_size=self.args.batch_size,
             shuffle=True,
             collate_fn=collate_fn,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=True
         )
         
         self.valid_data_loader = torch.utils.data.DataLoader(
             valid_dataset,
-            batch_size=1,
+            batch_size=self.args.batch_size * 2,
             shuffle=True,
             collate_fn=collate_fn,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=True
         )
