@@ -27,9 +27,9 @@ class CustomTrainer:
             
         # get criterion and optimizer
         self.criterion = nn.CrossEntropyLoss().cuda()
-        self.optimizer = AdamW([p for p in self.model.parameters() if p.requires_grad],
-                               lr=self.args.learning_rate,
-                               weight_decay=self.args.weight_decay)
+        self.optimizer = torch.optim.AdamW([p for p in self.model.parameters() if p.requires_grad],
+                                            lr=self.args.learning_rate,
+                                            weight_decay=self.args.weight_decay)
         
         # load datasets
         train_dataset = Dataset(self.args.train_path)
@@ -65,8 +65,8 @@ class CustomTrainer:
         if self.args.use_amp:
             self.scaler = torch.cuda.amp.GradScaler()
             
-        for epoch in tqdm(range(self.args.num_epochs)):
-            self.train_epoch(epoch)
+        for epoch in range(self.args.num_epochs):
+            self.trian_epoch(epoch)
             self.evaluate_epoch(epoch)
     
     def evaluation_loop(self):
@@ -75,7 +75,7 @@ class CustomTrainer:
     def trian_epoch(self, epoch):
         
         # enumarate over taining data
-        for i, batch_dict in enumerate(self.train_loader):
+        for i, batch_dict in enumerate(self.train_data_loader):
             if torch.cuda.is_available():
                 batch_dict = self.move_to_cuda(batch_dict)
 
@@ -83,18 +83,18 @@ class CustomTrainer:
             self.model.train()
             
             # compute encodings and logits
-            if self.args.use_amp():
+            if self.args.use_amp:
                 with torch.cuda.amp.autocast():
-                    model_outputs = self.model(**batch_dict)
+                    model_output = self.model(**batch_dict)
             else:
                 model_output = self.model(**batch_dict)
 
-            model = model.module if hasattr(model, "module") else model
+            model = model.module if hasattr(self.model, "module") else self.model
             model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
             logits, labels = model_output.get(logits), model_output.get(labels)
         
                 
-    def evlauate_epoch():
+    def evaluate_epoch():
         pass
     
     def move_to_cuda(self, data): 
@@ -102,7 +102,7 @@ class CustomTrainer:
         
         def _move_to_cuda(data):
             if torch.is_tensor(data): return data.cuda(non_blocking=True)
-            if isinstance(data, dict): return {key: _move_to_cuda(value) for key, value in data.item()}
+            if isinstance(data, dict): return {key: _move_to_cuda(value) for key, value in data.items()}
             if isinstance(data, tuple): return (_move_to_cuda(value) for value in data)
             if isinstance(data, list): return [_move_to_cuda(item) for item in data]
             else: return data

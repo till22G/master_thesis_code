@@ -40,7 +40,7 @@ parser.add_argument("--learning-rate", default=2e-5, type=float,
                     help="set the initial learning rate for the training")
 parser.add_argument("--weight-decay",default=1e-4,type=float,
                     help="set the weight decay for the learning rate during training")
-parser.add_argument("--num-epochs", default=0, type=int,
+parser.add_argument("--num-epochs", default=10, type=int,
                     help="set the number of epochs for training")
 parser.add_argument("--warmup", default=400, type=int,
                     help="set the number of warmup steps for the training")
