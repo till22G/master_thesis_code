@@ -1,5 +1,6 @@
 import torch.utils.data
 import torch.nn as nn
+import tqdm
 
 from transformers import AdamW, get_linear_schedule_with_warmup
 
@@ -59,3 +60,23 @@ class CustomTrainer:
             pin_memory=True,
             drop_last=True
         )
+        
+    def training_loop(self):
+        if self.args.use_amp:
+            self.scaler = torch.cuda.amp.GradScaler()
+            
+        for epoch in tqdm(range(self.args.epochs)):
+            self.tarin_epoch(epoch)
+            self.elvauate_epoch(epoch)
+    
+    def evaluation_loop(self):
+        pass
+    
+    def trian_epoch(self, epoch):
+        for i, batch_dict in enumerate(self.train_loader):
+            if torch.cuda.is_available():
+                
+        
+    def evlauate_epoch():
+        pass
+    
