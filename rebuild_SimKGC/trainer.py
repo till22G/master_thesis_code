@@ -7,6 +7,7 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 from model import build_model
 from data_structures import Dataset, collate_fn
 from logger import logger
+from help_functions import move_to_cuda
 
 class CustomTrainer:
     def __init__(self, args) -> None:
@@ -62,6 +63,7 @@ class CustomTrainer:
         )
         
     def training_loop(self):
+        
         if self.args.use_amp:
             self.scaler = torch.cuda.amp.GradScaler()
             
@@ -77,7 +79,7 @@ class CustomTrainer:
         # enumarate over taining data
         for i, batch_dict in enumerate(self.train_data_loader):
             if torch.cuda.is_available():
-                batch_dict = self.move_to_cuda(batch_dict)
+                batch_dict = move_to_cuda(batch_dict)
 
             # set model in train mode
             self.model.train()
@@ -91,20 +93,11 @@ class CustomTrainer:
 
             model = model.module if hasattr(self.model, "module") else self.model
             model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
-            logits, labels = model_output.get(logits), model_output.get(labels)
+            logits, labels = model_output.get("logits"), model_output.get("labels")
+            
+            logger.info("{}/{}".format(i, len(self.train_data_loader)))  
+        logger.info("Epoch {}/{}".format(epoch, self.args.num_epochs))
         
                 
     def evaluate_epoch():
         pass
-    
-    def move_to_cuda(self, data): 
-        if len(data) == 0: return {}
-        
-        def _move_to_cuda(data):
-            if torch.is_tensor(data): return data.cuda(non_blocking=True)
-            if isinstance(data, dict): return {key: _move_to_cuda(value) for key, value in data.items()}
-            if isinstance(data, tuple): return (_move_to_cuda(value) for value in data)
-            if isinstance(data, list): return [_move_to_cuda(item) for item in data]
-            else: return data
-        
-        return _move_to_cuda(data)

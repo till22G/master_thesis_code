@@ -26,7 +26,7 @@ parser.add_argument("--finetune-t", action="store_true",
                     help="set whether t should be finetuned during training or not")
 parser.add_argument("--additive-margin", default=0.02, type=float,
                     help="set additive margin in InfoNCE loss function")
-parser.add_argument("--batch-size", default=10, type=int,
+parser.add_argument("--batch-size", default=20, type=int,
                     help="set the mini-batch size for training")
 parser.add_argument("--pre-batch", default=2, type=int,
                     help="number of pre-batches used to compute pre-batch negatives")

@@ -5,6 +5,7 @@ from transformers import AutoModel, AutoConfig
 
 from triplet_mask import construct_triplet_mask, construct_self_negative_mask
 from logger import logger
+from help_functions import move_to_cuda
 
 def build_model(args) -> nn.Module:
     logger.info("Building model")
@@ -89,6 +90,7 @@ class CustomModel(nn.Module):
     
         batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
         triplet_mask = construct_triplet_mask(batched_datapoints)
+        if torch.cuda.is_available(): triplet_mask = move_to_cuda(triplet_mask)
         
         if triplet_mask is not None:
             logits.masked_fill(triplet_mask, -1e4)
@@ -103,6 +105,7 @@ class CustomModel(nn.Module):
             hr_vec, head_vec = encodings["hr_vec"], encodings["h_vec"]
             self_neg_logits = torch.sum(hr_vec * head_vec, dim=1) * self.log_inv_t.exp()
             self_neg_mask = construct_self_negative_mask(batched_datapoints)
+            if torch.cuda.is_available(): self_neg_mask = move_to_cuda(self_neg_mask)
             self_neg_logits = self_neg_logits.masked_fill(self_neg_mask, -1e4)
             logits = torch.cat([logits, self_neg_logits.unsqueeze(1)], dim=1)
             
