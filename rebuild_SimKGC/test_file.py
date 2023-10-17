@@ -20,7 +20,7 @@ from trainer import CustomTrainer
 args.train_path = "../data/fb15k237/train.json"
 args.valid_path = "../data/fb15k237/valid.json"
 trainer = CustomTrainer(args)
-
+trainer.training_loop()
 
 
 """ 

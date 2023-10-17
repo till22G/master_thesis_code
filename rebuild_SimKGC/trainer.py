@@ -65,18 +65,46 @@ class CustomTrainer:
         if self.args.use_amp:
             self.scaler = torch.cuda.amp.GradScaler()
             
-        for epoch in tqdm(range(self.args.epochs)):
-            self.tarin_epoch(epoch)
-            self.elvauate_epoch(epoch)
+        for epoch in tqdm(range(self.args.num_epochs)):
+            self.train_epoch(epoch)
+            self.evaluate_epoch(epoch)
     
     def evaluation_loop(self):
         pass
     
     def trian_epoch(self, epoch):
+        
+        # enumarate over taining data
         for i, batch_dict in enumerate(self.train_loader):
             if torch.cuda.is_available():
-                
+                batch_dict = self.move_to_cuda(batch_dict)
+
+            # set model in train mode
+            self.model.train()
+            
+            # compute encodings and logits
+            if self.args.use_amp():
+                with torch.cuda.amp.autocast():
+                    model_outputs = self.model(**batch_dict)
+            else:
+                model_output = self.model(**batch_dict)
+
+            model = model.module if hasattr(model, "module") else model
+            model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
+            logits, labels = model_output.get(logits), model_output.get(labels)
         
+                
     def evlauate_epoch():
         pass
     
+    def move_to_cuda(self, data): 
+        if len(data) == 0: return {}
+        
+        def _move_to_cuda(data):
+            if torch.is_tensor(data): return data.cuda(non_blocking=True)
+            if isinstance(data, dict): return {key: _move_to_cuda(value) for key, value in data.item()}
+            if isinstance(data, tuple): return (_move_to_cuda(value) for value in data)
+            if isinstance(data, list): return [_move_to_cuda(item) for item in data]
+            else: return data
+        
+        return _move_to_cuda(data)

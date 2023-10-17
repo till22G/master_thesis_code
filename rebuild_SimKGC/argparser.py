@@ -44,4 +44,6 @@ parser.add_argument("--num-epochs", default=0, type=int,
                     help="set the number of epochs for training")
 parser.add_argument("--warmup", default=400, type=int,
                     help="set the number of warmup steps for the training")
+parser.add_argument("--use-amp", action="store_false",
+                    help="specify whether amp should be used or not")
 args = parser.parse_args()
