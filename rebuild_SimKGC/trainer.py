@@ -25,6 +25,9 @@ class CustomTrainer:
             logger.info("{} cuda device found. GPU will be used".format(torch.cuda.device_count()))
         else: 
             logger.info("No GPU available. CPU will be used")
+          
+        # construct GradScaler when using amp  
+        if self.args.use_amp: self.scaler = torch.cuda.amp.GradScaler()    
             
         # get criterion and optimizer
         self.criterion = nn.CrossEntropyLoss().cuda()
@@ -94,6 +97,28 @@ class CustomTrainer:
             model = model.module if hasattr(self.model, "module") else self.model
             model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
             logits, labels = model_output.get("logits"), model_output.get("labels")
+            
+            loss = self.criterion(logits, labels)
+            # they also included loss for tails -> head + relation
+            
+            self.optimizer.zero_grad()
+            if self.args.use_amp:
+                with torch.cuda.amp.autocast():
+                    loss.backward()
+                    
+                self.scaler.scale(loss).backward()
+                self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.grad_clip)
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+                
+            else:
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
+                self.optimizer.step()
+                
+            self.lr_scheduler.step()
+
             
             logger.info("{}/{}".format(i, len(self.train_data_loader)))  
         logger.info("Epoch {}/{}".format(epoch, self.args.num_epochs))
