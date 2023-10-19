@@ -8,7 +8,7 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 from model import build_model
 from data_structures import Dataset, collate_fn
 from logger import logger
-from help_functions import move_to_cuda
+from help_functions import move_to_cuda, calculate_accuracy, calculate_running_mean
 
 class CustomTrainer:
     def __init__(self, args) -> None:
@@ -116,12 +116,18 @@ class CustomTrainer:
                 
             self.lr_scheduler.step()
             
+            # test compute accuracy
+            _ = calculate_accuracy(logits, labels, topk=(1, 3))
+            print(_)
+            
         logger.info("Epoch {}/{}".format(epoch, self.args.num_epochs))
         
                 
     def evaluate_epoch(self, epoch, save_checkpoint):
         if not self.valid_data_loader:
             return {}
+        
+        runnig_mean_acc = []
 
         for i, batch_dict in enumerate(tqdm(self.valid_data_loader)):
             if torch.cuda.is_available():
@@ -139,15 +145,17 @@ class CustomTrainer:
             loss = self.criterion(logits, labels)
             
             # calculate accuracy
+            accuracy = calculate_accuracy(logits, labels, topk=(1, 3))
             
+            runnig_mean_acc = calculate_running_mean(runnig_mean_acc, accuracy, i)
+        
+        # save model checkpoint
+        save_dict = {"model_state_dict" : self.model.state_dict(),
+                     "args" : self.args.__dict__,
+                     "epoch" : epoch}
             
-            # save model checkpoint
-            save_dict = {"model_state_dict" : self.model.state_dict(),
-                         "args" : self.args.__dict__,
-                         "epoch" : epoch}
-            
-            save_state_path = os.path.join(self.args.model_dir, "checkpoints", "model_checkpoint_{}".format(epoch))
-            torch.save(save_dict, save_state_path)
+        save_state_path = os.path.join(self.args.model_dir, "checkpoints", "model_checkpoint_{}".format(epoch))
+        torch.save(save_dict, save_state_path)
                 
         # save checkpoint
         # delete checkpoint
