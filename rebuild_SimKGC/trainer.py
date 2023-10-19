@@ -1,7 +1,8 @@
 import torch.utils.data
 import torch.nn as nn
-import tqdm
+import os
 
+from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
 
 from model import build_model
@@ -43,9 +44,9 @@ class CustomTrainer:
         assert self.args.batch_size > 0, "Batch size must be larger than 0"
         num_training_steps = self.args.num_epochs * len(train_dataset) // self.args.batch_size
         args.warmup = min(self.args.warmup, num_training_steps // 10)
-        lr_scheduler = get_linear_schedule_with_warmup(optimizer=self.optimizer,
-                                                       num_warmup_steps=args.warmup,
-                                                       num_training_steps=num_training_steps)
+        self.lr_scheduler = get_linear_schedule_with_warmup(optimizer=self.optimizer,
+                                                            num_warmup_steps=args.warmup,
+                                                            num_training_steps=num_training_steps)
         
         self.train_data_loader = torch.utils.data.DataLoader(
             train_dataset,
@@ -74,13 +75,10 @@ class CustomTrainer:
             self.trian_epoch(epoch)
             self.evaluate_epoch(epoch)
     
-    def evaluation_loop(self):
-        pass
-    
     def trian_epoch(self, epoch):
         
         # enumarate over taining data
-        for i, batch_dict in enumerate(self.train_data_loader):
+        for i, batch_dict in enumerate(tqdm(self.train_data_loader)):
             if torch.cuda.is_available():
                 batch_dict = move_to_cuda(batch_dict)
 
@@ -98,13 +96,12 @@ class CustomTrainer:
             model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
             logits, labels = model_output.get("logits"), model_output.get("labels")
             
-            loss = self.criterion(logits, labels)
-            # they also included loss for tails -> head + relation
-            
             self.optimizer.zero_grad()
+            
             if self.args.use_amp:
                 with torch.cuda.amp.autocast():
-                    loss.backward()
+                    loss = self.criterion(logits, labels)
+                    # they also included loss for tails -> head + relation
                     
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(self.optimizer)
@@ -118,11 +115,39 @@ class CustomTrainer:
                 self.optimizer.step()
                 
             self.lr_scheduler.step()
-
             
-            logger.info("{}/{}".format(i, len(self.train_data_loader)))  
         logger.info("Epoch {}/{}".format(epoch, self.args.num_epochs))
         
                 
-    def evaluate_epoch():
-        pass
+    def evaluate_epoch(self, epoch, save_checkpoint):
+        if not self.valid_data_loader:
+            return {}
+
+        for i, batch_dict in enumerate(tqdm(self.valid_data_loader)):
+            if torch.cuda.is_available():
+                batch_dict = move_to_cuda(batch_dict)
+            
+            # set model in evaluation mode
+            self.model.eval()
+            
+            model_output = self.model(**batch_dict)
+            model = model.module if hasattr(self.model, "module") else self.model
+            model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
+            logits, labels = model_output.get("logits"), model_output.get("labels")
+            
+            # calculate loss
+            loss = self.criterion(logits, labels)
+            
+            # calculate accuracy
+            
+            
+            # save model checkpoint
+            save_dict = {"model_state_dict" : self.model.state_dict(),
+                         "args" : self.args.__dict__,
+                         "epoch" : epoch}
+            
+            save_state_path = os.path.join(self.args.model_dir, "checkpoints", "model_checkpoint_{}".format(epoch))
+            torch.save(save_dict, save_state_path)
+                
+        # save checkpoint
+        # delete checkpoint

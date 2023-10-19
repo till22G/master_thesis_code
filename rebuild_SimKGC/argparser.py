@@ -46,4 +46,8 @@ parser.add_argument("--warmup", default=400, type=int,
                     help="set the number of warmup steps for the training")
 parser.add_argument("--use-amp", action="store_false",
                     help="specify whether amp should be used or not")
+parser.add_argument("--grad-clip", default=10, type=float,
+                    help="define value for gradient clip")
+parser.add_argument("--model-dir", default="test_model_dict", type=str,
+                    help="define the output diretory for the model")
 args = parser.parse_args()
