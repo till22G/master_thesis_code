@@ -28,9 +28,15 @@ def calculate_accuracy(logits: torch.tensor, labels: torch.tensor, topk=(1, )) -
             
     return accuracies
 
-def calculate_running_mean(runnig_mean: List, new_datapoint: List, iteration: int) -> List:
-    for i in range(len(runnig_mean)):
-        tmp = (new_datapoint[i] - runnig_mean[i]) / iteration
-        runnig_mean[i] = runnig_mean[i] + tmp
+def calculate_running_mean(runnig_mean, new_datapoint, iteration: int):
     
-    return runnig_mean
+    if isinstance(runnig_mean, list):
+        for i in range(len(runnig_mean)):
+            tmp = (new_datapoint[i] - runnig_mean[i]) / iteration
+            runnig_mean[i] = runnig_mean[i] + tmp
+        return runnig_mean
+    
+    elif isinstance(runnig_mean, float) or isinstance(runnig_mean, int):
+        tmp = (new_datapoint - runnig_mean) / iteration
+        runnig_mean = runnig_mean + tmp
+        return runnig_mean

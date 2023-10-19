@@ -128,7 +128,8 @@ class CustomTrainer:
             return {}
         
         runnig_mean_acc = []
-
+        running_mean_loss = []
+        
         for i, batch_dict in enumerate(tqdm(self.valid_data_loader)):
             if torch.cuda.is_available():
                 batch_dict = move_to_cuda(batch_dict)
@@ -143,10 +144,10 @@ class CustomTrainer:
             
             # calculate loss
             loss = self.criterion(logits, labels)
+            running_mean_loss == calculate_running_mean(running_mean_loss, loss, i)
             
             # calculate accuracy
             accuracy = calculate_accuracy(logits, labels, topk=(1, 3))
-            
             runnig_mean_acc = calculate_running_mean(runnig_mean_acc, accuracy, i)
         
         # save model checkpoint
