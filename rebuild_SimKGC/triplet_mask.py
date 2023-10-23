@@ -26,7 +26,6 @@ def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) 
         neighbors = training_triples_class.get_neighbors(head, relation)
         if len(neighbors) <= 1:
             if len(neighbors) == 0:
-                if i == 1: print(head, relation)
                 zero_count += 1
             continue
         for j in range(num_cols):

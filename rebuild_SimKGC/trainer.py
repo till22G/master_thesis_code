@@ -8,7 +8,7 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 from model import build_model
 from data_structures import Dataset, collate_fn
 from logger import logger
-from help_functions import move_to_cuda, calculate_accuracy, calculate_running_mean
+from help_functions import move_to_cuda, calculate_accuracy, calculate_running_mean, save_checkpoints
 
 class CustomTrainer:
     def __init__(self, args) -> None:
@@ -31,6 +31,7 @@ class CustomTrainer:
         if self.args.use_amp: self.scaler = torch.cuda.amp.GradScaler()    
             
         # get criterion and optimizer
+        self.best_metric = None
         self.criterion = nn.CrossEntropyLoss().cuda()
         self.optimizer = torch.optim.AdamW([p for p in self.model.parameters() if p.requires_grad],
                                             lr=self.args.learning_rate,
@@ -59,7 +60,7 @@ class CustomTrainer:
         
         self.valid_data_loader = torch.utils.data.DataLoader(
             valid_dataset,
-            batch_size=self.args.batch_size * 2,
+            batch_size=self.args.batch_size,
             shuffle=True,
             collate_fn=collate_fn,
             pin_memory=True,
@@ -71,7 +72,7 @@ class CustomTrainer:
         if self.args.use_amp:
             self.scaler = torch.cuda.amp.GradScaler()
             
-        for epoch in range(self.args.num_epochs):
+        for epoch in range(1, self.args.num_epochs + 1):
             self.trian_epoch(epoch)
             self.evaluate_epoch(epoch)
     
@@ -115,20 +116,15 @@ class CustomTrainer:
                 self.optimizer.step()
                 
             self.lr_scheduler.step()
-            
-            # test compute accuracy
-            _ = calculate_accuracy(logits, labels, topk=(1, 3))
-            print(_)
-            
         logger.info("Epoch {}/{}".format(epoch, self.args.num_epochs))
         
                 
-    def evaluate_epoch(self, epoch, save_checkpoint):
+    def evaluate_epoch(self, epoch):
         if not self.valid_data_loader:
             return {}
         
         runnig_mean_acc = []
-        running_mean_loss = []
+        running_mean_loss = 0
         
         for i, batch_dict in enumerate(tqdm(self.valid_data_loader)):
             if torch.cuda.is_available():
@@ -144,19 +140,58 @@ class CustomTrainer:
             
             # calculate loss
             loss = self.criterion(logits, labels)
-            running_mean_loss == calculate_running_mean(running_mean_loss, loss, i)
-            
+            running_mean_loss == calculate_running_mean(running_mean_loss, loss, i+1)
+           
             # calculate accuracy
             accuracy = calculate_accuracy(logits, labels, topk=(1, 3))
-            runnig_mean_acc = calculate_running_mean(runnig_mean_acc, accuracy, i)
+            runnig_mean_acc = calculate_running_mean(runnig_mean_acc, accuracy, i+1)
+            
+        # report values
+        logger.info("Epoch {}: mean loss: {}, top 1 accuracy: {}, top 3 accuracy: {}".format(epoch,
+                                                                                             running_mean_loss,
+                                                                                             runnig_mean_acc[0],
+                                                                                             runnig_mean_acc[1]))
+        
         
         # save model checkpoint
         save_dict = {"model_state_dict" : self.model.state_dict(),
                      "args" : self.args.__dict__,
                      "epoch" : epoch}
+        
+        is_best = self.best_metric is None or runnig_mean_acc[0] > self.best_metric
+        if is_best: best_metric = runnig_mean_acc[0]
+        save_checkpoints(self.args, save_dict, runnig_mean_acc, epoch, is_best)
+        
+        
+        """ if not os.path.isdir(os.path.join("..", "model_checkpoints")):
+            os.mkdir(os.path.join("..", "model_checkpoints"))
             
-        save_state_path = os.path.join(self.args.model_dir, "checkpoints", "model_checkpoint_{}".format(epoch))
+        if not os.path.isdir(os.path.join("..", "model_checkpoints", self.args.task)):
+            os.mkdir(os.path.join("..", "model_checkpoints", self.args.task))
+          
+        
+        
+        if is_best:
+            self.best_metric = runnig_mean_acc[0]
+            save_state_path = os.path.join("..", 
+                                          "model_checkpoints",
+                                          self.args.task,
+                                          "best_model_checkpoint.mdl".format(epoch))
+            print(save_state_path)
+            torch.save(save_dict, save_state_path)
+            
+        save_state_path = os.path.join("..", 
+                                       "model_checkpoints",
+                                       self.args.task,
+                                       "model_checkpoint_{}.mdl".format(epoch))
+                     
         torch.save(save_dict, save_state_path)
+        old_model_path = os.path.join('..', 
+                                       "model_checkpoints",
+                                       self.args.task, 
+                                       "model_checkpoint_{}.mdl".format(epoch - 1))
+        if os.path.exists(old_model_path):
+            os.remove(old_model_path) """
                 
-        # save checkpoint
-        # delete checkpoint
+        
+        
