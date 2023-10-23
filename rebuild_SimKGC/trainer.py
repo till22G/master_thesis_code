@@ -75,8 +75,12 @@ class CustomTrainer:
         for epoch in range(1, self.args.num_epochs + 1):
             self.trian_epoch(epoch)
             self.evaluate_epoch(epoch)
+            
+        logger.info("Finished training")
     
     def trian_epoch(self, epoch):
+        
+        logger.info("Starting training epoch {}/{}".format(epoch, self.args.num_epochs))
         
         # enumarate over taining data
         for i, batch_dict in enumerate(tqdm(self.train_data_loader)):
@@ -116,12 +120,13 @@ class CustomTrainer:
                 self.optimizer.step()
                 
             self.lr_scheduler.step()
-        logger.info("Epoch {}/{}".format(epoch, self.args.num_epochs))
         
                 
     def evaluate_epoch(self, epoch):
         if not self.valid_data_loader:
             return {}
+        
+        logger.info("Starting evaluation epoch")
         
         runnig_mean_acc = []
         running_mean_loss = 0
@@ -140,14 +145,14 @@ class CustomTrainer:
             
             # calculate loss
             loss = self.criterion(logits, labels)
-            running_mean_loss == calculate_running_mean(running_mean_loss, loss, i+1)
+            running_mean_loss = calculate_running_mean(running_mean_loss, loss, i+1)
            
             # calculate accuracy
             accuracy = calculate_accuracy(logits, labels, topk=(1, 3))
             runnig_mean_acc = calculate_running_mean(runnig_mean_acc, accuracy, i+1)
             
         # report values
-        logger.info("Epoch {}: mean loss: {}, top 1 accuracy: {}, top 3 accuracy: {}".format(epoch,
+        logger.info("Epoch {}: mean loss: {:.4f}, top 1 accuracy: {:.4f}, top 3 accuracy: {:.4f}".format(epoch,
                                                                                              running_mean_loss,
                                                                                              runnig_mean_acc[0],
                                                                                              runnig_mean_acc[1]))
@@ -160,38 +165,4 @@ class CustomTrainer:
         
         is_best = self.best_metric is None or runnig_mean_acc[0] > self.best_metric
         if is_best: best_metric = runnig_mean_acc[0]
-        save_checkpoints(self.args, save_dict, runnig_mean_acc, epoch, is_best)
-        
-        
-        """ if not os.path.isdir(os.path.join("..", "model_checkpoints")):
-            os.mkdir(os.path.join("..", "model_checkpoints"))
-            
-        if not os.path.isdir(os.path.join("..", "model_checkpoints", self.args.task)):
-            os.mkdir(os.path.join("..", "model_checkpoints", self.args.task))
-          
-        
-        
-        if is_best:
-            self.best_metric = runnig_mean_acc[0]
-            save_state_path = os.path.join("..", 
-                                          "model_checkpoints",
-                                          self.args.task,
-                                          "best_model_checkpoint.mdl".format(epoch))
-            print(save_state_path)
-            torch.save(save_dict, save_state_path)
-            
-        save_state_path = os.path.join("..", 
-                                       "model_checkpoints",
-                                       self.args.task,
-                                       "model_checkpoint_{}.mdl".format(epoch))
-                     
-        torch.save(save_dict, save_state_path)
-        old_model_path = os.path.join('..', 
-                                       "model_checkpoints",
-                                       self.args.task, 
-                                       "model_checkpoint_{}.mdl".format(epoch - 1))
-        if os.path.exists(old_model_path):
-            os.remove(old_model_path) """
-                
-        
-        
+        save_checkpoints(self.args, save_dict, epoch, is_best)
