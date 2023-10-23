@@ -1,24 +1,28 @@
 import json
+import traceback
+import os
 
+from argparser import args
 from logger import logger
 
 def _load_fbk15_237_triples(dataset_path: str, dataset: str) -> list:
     triples = []
+    path = os.path.join(dataset_path, "{}.txt".format(dataset))
     
     try:
-        with open("{dataset_path}{dataset}.txt".format(dataset_path=dataset_path, dataset=dataset), "r", encoding="utf-8") as file:
+        with open(path, "r", encoding="utf-8") as file:
             lines = file.readlines()
             for line in lines:
                 triples.append(line.strip().split('\t'))
                 
-        print("FBK15_237 data was loaded successfully")
+        logger.info("{} FBK15_237 triples loaded successfully".format(len(triples)))
         
     except Exception as e:
         global error_count
-        error_count += 1 
-        print("FBK15_237 data could not be loaded successfully")
-        print(e)
-                              
+        error_count += 1
+        logger.error("FBK15_237 data could not be loaded successfully")
+        logger.error(traceback.print_exc())
+             
     return triples
         
 
@@ -33,14 +37,14 @@ def _load_fbk15_237_mid2names(path: str) -> dict:
                 name = name.replace("_", " ")
                 entity_names[code] = name
         
-        print("{} names from /FB15k_mid2description.txt were loaded successfully".format(len(entity_names)))
+        logger.info("{} names from FB15k_mid2names loaded successfully".format(len(entity_names)))
         
     except Exception as e:
         global error_count
-        error_count += 1 
-        print("FBK15_237 names could not be loaded successfully")
-        print(e)
-        
+        error_count += 1
+        logger.error("FBK15_237_mid2names could not be loaded")
+        logger.error(traceback.print_exc())
+
     return entity_names
 
 def _load_fbk15_237_mid2descriptions(path: str) -> dict:
@@ -53,12 +57,13 @@ def _load_fbk15_237_mid2descriptions(path: str) -> dict:
                 code, description = line.strip().split('\t')
                 description = description.replace("\\", "")
                 entity_descriptions[code] = " ".join(description.split()[:50]) # truncate descriptions at 50 tokens
+        logger.info("FBK15_237_mid2descriptions loaded successfully")
                 
-    except Exception as e:
+    except:
         global error_count
-        error_count += 1 
-        print("FBK15_237_mid2descriptions could not be loaded successfully")
-        print(e)
+        error_count += 1
+        logger.error("FBK15_237_mid2descriptions could not be loaded successfully")
+        logger.error(traceback.print_exc())
 
     return entity_descriptions
 
@@ -66,7 +71,7 @@ def _load_fbk15_237_mid2descriptions(path: str) -> dict:
 def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, dataset: str) -> None:
     entries = []
     
-    rel_id_to_surface_form = _normalize_relations(triples)
+    rel_id_to_surface_form = _normalize_relations(triples, save_relations=True, data_dir=dataset_path)
     _check_duplicates(rel_id_to_surface_form)
     
     for triple in triples:
@@ -81,11 +86,11 @@ def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, data
         
     filename = "{dataset_path}{dataset}.json".format(dataset_path=dataset_path, dataset=dataset)
     try:
-        print("Saving FBK15-237 triples as {} ...".format(filename)) 
+        logger.info("Saving FBK15-237 triples as {}".format(filename)) 
         with open(filename, "w", encoding="utf-8") as out_file:
             json.dump(entries, out_file, indent = 4, ensure_ascii=False)
             
-        print("Data saved to {}".format(filename))
+        logger.info("Data saved to {}".format(filename))
             
     except Exception as e:
         global error_count
@@ -95,9 +100,8 @@ def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, data
         
                 
 def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, entity_descriptions: dict, dataset_path: str) -> None:
-    entries = []
+   
     count = 0
-    
     entities = {}
     
     # save all entities that are contained in the training, validation and test data
@@ -109,7 +113,7 @@ def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, enti
                 entity_description = entity_descriptions[head_id]
             else:
                 count += 1
-                print("Entity ID not found in entity descriptions: {}".format(head_id))
+                logger.warning("Entity ID not found in entity descriptions: {}".format(head_id))
                 
             entities[head_id] = {"entity_id" : head_id,
                                  "entity": entity_name,
@@ -122,27 +126,27 @@ def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, enti
                 entity_description = entity_descriptions[tail_id]
             else:
                 count += 1
-                print("Entity ID not found in entity descriptions: {}".format(tail_id))
+                logger.warning("Entity ID not found in entity descriptions: {}".format(tail_id))
                 
             entities[tail_id] = {"entity_id" : tail_id,
                                  "entity": entity_name,
                                  "entity_desc": entity_description}
             
         
-    filename = "{dataset_path}preprocessed_entities.json".format(dataset_path=dataset_path)
+    filename = os.path.join(dataset_path, "entities.json")
     try:
-        print("Saving FBK15-237 entity data as {} ...".format(filename)) 
+        logger.info("Saving FBK15-237 entity data as {}".format(filename)) 
         with open(filename, "w", encoding="utf-8") as out_file:
             #json.dump(entries, out_file, indent = 4, ensure_ascii=False)
             json.dump(list(entities.values()), out_file, indent = 4, ensure_ascii=False)
             
-        print("Entities saved to {}".format(filename))
+        logger.info("Entities saved to {}".format(filename))
             
     except Exception as e:
         global error_count
         error_count += 1 
-        print("Entities could not be saved")
-        print(e)
+        logger.error("Entities could not be saved")
+        logger.error(traceback.print_exc())
     
     
 
@@ -165,22 +169,23 @@ def _rel_to_surface_form(relation: str) -> str:
 
 
 
-def _normalize_relations(triples: list) -> dict:
+def _normalize_relations(triples: list, save_relations: bool=True, data_dir: str=None) -> dict:
     rel_id_to_surface_form = {}
     for item in triples:    
         rel_id_to_surface_form[item[1]] = _rel_to_surface_form(item[1])
         
-    datapath = "../data/FB15K237/"
-    try:
-        with open("{}relations.json".format(datapath), "w", encoding="utf-8") as out_file:
-            json.dump(rel_id_to_surface_form, out_file, ensure_ascii=False, indent=4)
-            print("Save {} realtions to /relations.json".format(len(rel_id_to_surface_form)))
+    if save_relations:
+        filepath = os.path.join(data_dir, "relations.json")
+        try:
+            with open(filepath, "w", encoding="utf-8") as out_file:
+                json.dump(rel_id_to_surface_form, out_file, ensure_ascii=False, indent=4)
+                logger.info("Save {} realtions to \"{}\"".format(len(rel_id_to_surface_form), filepath))
 
-    except Exception as e:
-        global error_count
-        error_count += 1 
-        print("Entities could not be saved")
-        print(e)
+        except Exception as e:
+            global error_count
+            error_count += 1 
+            logger.warning("Entities could not be saved")
+            logger.warning(traceback.print_exc())
         
     return rel_id_to_surface_form 
     
@@ -198,38 +203,46 @@ def _check_duplicates(rel_id_to_surface_form: dict) -> None:
         surface_form_to_rel_id.setdefault(item, set()).add(key) 
     result = [key for key, values in surface_form_to_rel_id.items() if len(values) > 1]
     if (len(result) == 0):
-        print("No duplicates in surface forms found")
+        logger.info("No duplicates in surface forms found")
     else:
-        print("Attention !!! Some relations normalize to the same surface form")
-        print(result)
+        logger.warning("Attention! Some relations normalize to the same surface form")
+        logger.warning(result)
 
 # FB15k_237 entity descriptions
 fbk15_237_entity_descriptions = {}
 error_count = 0
 def main():
     
+    # change directory, so the script will find the data
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath) 
+    os.chdir(dname)
+    
     logger.info("Start pre-processing") 
     
     datasets = ["train", "valid", "test"]
     
-    dataset_path = "../data/FB15K237/"
+    dataset_path = os.path.join("..", "data", args.task )
     
     # list containing a dictionary of each triple in the data. The dictionary containes
     # the head_id, the head_name, the normalized relation, the tail_id and the tail name
     all_triples = []
     
-    # load entity descriptions as dictionary with the the code as key and the descriptions as value 
-    entity_descriptions = _load_fbk15_237_mid2descriptions("{dataset_path}FB15k_mid2description.txt".format(dataset_path=dataset_path))
-    entity_names = _load_fbk15_237_mid2names("{dataset_path}FB15K_mid2name.txt".format(dataset_path=dataset_path))
+    # load entity descriptions as dictionary with the the code as key and the descriptions as value
+    if args.task == "fb15k237":
+        descriptions_path = os.path.join(dataset_path, "FB15k_mid2description.txt")
+        entity_descriptions = _load_fbk15_237_mid2descriptions(descriptions_path)
+        mid2names_path = os.path.join(dataset_path, "FB15k_mid2name.txt")
+        entity_names = _load_fbk15_237_mid2names(mid2names_path)
     
-    for dataset in datasets:
-        triples = _load_fbk15_237_triples(dataset_path, dataset)
-        fbk15_237_to_json(triples, entity_names, dataset_path, dataset)
-        all_triples += triples
+        for dataset in datasets:
+            triples = _load_fbk15_237_triples(dataset_path, dataset)
+            fbk15_237_to_json(triples, entity_names, dataset_path, dataset)
+            all_triples += triples
     
     _save_FBK15_237_entities_to_json(all_triples, entity_names, entity_descriptions, dataset_path)
 
-    print("Finished pre-processing with {} errors".format(error_count))
+    logger.info("Finished pre-processing with {} errors".format(error_count))
 
 
 if __name__ == "__main__":
