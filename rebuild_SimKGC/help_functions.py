@@ -38,14 +38,13 @@ def calculate_running_mean(runnig_mean, new_datapoint, iteration: int):
             runnig_mean[i] = runnig_mean[i] + tmp
         return runnig_mean
     
-    elif isinstance(runnig_mean, float) or isinstance(runnig_mean, int):
-        tmp = (new_datapoint - runnig_mean) / iteration
+    if isinstance(runnig_mean, float) or isinstance(runnig_mean, int):
+        tmp = (float(new_datapoint) - runnig_mean) / iteration
         runnig_mean = runnig_mean + tmp
         return runnig_mean
     
 
-def save_checkpoints(args, save_dict, runnig_mean_acc, epoch, is_best):
-        
+def save_checkpoints(args, save_dict, epoch, is_best=False):
         
         if not os.path.isdir(os.path.join("..", "model_checkpoints")):
             os.mkdir(os.path.join("..", "model_checkpoints"))
