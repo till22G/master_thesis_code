@@ -16,7 +16,7 @@ def move_to_cuda(data):
     return _move_to_cuda(data)
 
 
-def calculate_accuracy(logits: torch.tensor, labels: torch.tensor, topk=(1,3)) -> List[torch.tensor]:
+def calculate_accuracy(logits: torch.tensor, labels: torch.tensor, topk=(1,7)) -> List[torch.tensor]:
     with torch.no_grad():
         max_k = max(topk)
         _ , idx_topk_pred = logits.topk(max_k, dim=1)
@@ -38,13 +38,14 @@ def calculate_running_mean(runnig_mean, new_datapoint, iteration: int):
             runnig_mean[i] = runnig_mean[i] + tmp
         return runnig_mean
     
-    if isinstance(runnig_mean, float) or isinstance(runnig_mean, int):
+    elif isinstance(runnig_mean, float) or isinstance(runnig_mean, int):
         tmp = (float(new_datapoint) - runnig_mean) / iteration
         runnig_mean = runnig_mean + tmp
         return runnig_mean
     
 
 def save_checkpoints(args, save_dict, epoch, is_best=False):
+        
         
         if not os.path.isdir(os.path.join("..", "model_checkpoints")):
             os.mkdir(os.path.join("..", "model_checkpoints"))

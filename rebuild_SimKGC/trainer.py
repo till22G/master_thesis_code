@@ -75,10 +75,12 @@ class CustomTrainer:
         for epoch in range(1, self.args.num_epochs + 1):
             self.trian_epoch(epoch)
             self.evaluate_epoch(epoch)
+            
+        logger.info("Finished training")
     
     def trian_epoch(self, epoch):
         
-        logger.info("Strating training epoch")
+        logger.info("Starting training epoch {}/{}".format(epoch, self.args.num_epochs))
         
         # enumarate over taining data
         for i, batch_dict in enumerate(tqdm(self.train_data_loader)):
@@ -124,7 +126,7 @@ class CustomTrainer:
         if not self.valid_data_loader:
             return {}
         
-        logger.info("Starting evluation epoch")
+        logger.info("Starting evaluation epoch")
         
         runnig_mean_acc = []
         running_mean_loss = 0.0
@@ -163,5 +165,4 @@ class CustomTrainer:
         is_best = self.best_metric is None or runnig_mean_acc[0] > self.best_metric
         if is_best: best_metric = runnig_mean_acc[0]
         save_checkpoints(self.args, save_dict, epoch, is_best)
-        
         
