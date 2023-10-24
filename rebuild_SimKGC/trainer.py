@@ -107,6 +107,7 @@ class CustomTrainer:
                 with torch.cuda.amp.autocast():
                     loss = self.criterion(logits, labels)
                     # they also included loss for tails -> head + relation
+                    loss += self.criterion(logits[:, :self.args.batch_size].t(), labels)
                     
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(self.optimizer)
@@ -115,6 +116,8 @@ class CustomTrainer:
                 self.scaler.update()
                 
             else:
+                loss = self.criterion(logits, labels)
+                loss += self.criterion(logits[:, :self.args.batch_size].t(), labels)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
                 self.optimizer.step()

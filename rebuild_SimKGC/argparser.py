@@ -5,8 +5,6 @@ parser = argparse.ArgumentParser(prog="replicated SimKGC",
 
 parser.add_argument("--pretrained-model", default="bert-base-uncased", type=str, 
                     help="define the transformer model that is used for encoder initialization")
-parser.add_argument("--test-mode", action="store_true",
-                    help="Start SimKGC in test mode or not")
 parser.add_argument("--task", default="fb15k237", type=str,
                     help="Select the dataset that is used for training and validation")
 parser.add_argument("--train-path", default="", type=str,
@@ -15,7 +13,7 @@ parser.add_argument("--valid-path", default="", type=str,
                     help="Define the path to the validation data")
 parser.add_argument("--max-number-tokens", default=50, type=int,
                     help="Specify the maximal number of tokens returned by the tokenizer")
-parser.add_argument("--use-neighbors", action="store_false",
+parser.add_argument("--use-neighbors", action="store_true",
                     help="Set whether context from neighboring nodes should be used when \
                     the descriptions are short (< 20 tokens)")
 parser.add_argument("--use-descriptions", action="store_true",
@@ -30,9 +28,9 @@ parser.add_argument("--batch-size", default=8, type=int,
                     help="set the mini-batch size for training")
 parser.add_argument("--pre-batch", default=2, type=int,
                     help="number of pre-batches used to compute pre-batch negatives")
-parser.add_argument("--use-inverse-triples", action="store_false",
+parser.add_argument("--use-inverse-triples", action="store_true",
                     help="specify whether inverse triple should be loaded to the data or not")
-parser.add_argument("--use-self-negatives", action="store_false",
+parser.add_argument("--use-self-negatives", action="store_true",
                     help="toggle whether self negatives are used for training or not")
 parser.add_argument("--pre-batch-weight", default=0.5, type=float,
                     help="set the weight of the pre-batch logits")
@@ -44,7 +42,7 @@ parser.add_argument("--num-epochs", default=10, type=int,
                     help="set the number of epochs for training")
 parser.add_argument("--warmup", default=400, type=int,
                     help="set the number of warmup steps for the training")
-parser.add_argument("--use-amp", action="store_false",
+parser.add_argument("--use-amp", action="store_true",
                     help="specify whether amp should be used or not")
 parser.add_argument("--grad-clip", default=10, type=float,
                     help="define value for gradient clip")
