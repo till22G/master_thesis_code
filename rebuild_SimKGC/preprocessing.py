@@ -84,7 +84,7 @@ def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, data
 
         entries.append(entry)
         
-    filename = "{dataset_path}{dataset}.json".format(dataset_path=dataset_path, dataset=dataset)
+    filename = os.path.join(dataset_path, "{}.json".format(dataset))
     try:
         logger.info("Saving FBK15-237 triples as {}".format(filename)) 
         with open(filename, "w", encoding="utf-8") as out_file:
@@ -191,10 +191,6 @@ def _normalize_relations(triples: list, save_relations: bool=True, data_dir: str
     
 
 def _check_duplicates(rel_id_to_surface_form: dict) -> None:
-    
-    """ tmp = rel_id_to_surface_form.copy()
-    tuple = tmp.popitem()
-    rel_id_to_surface_form["test_key"] = tuple[1] """
 
     surface_form_to_rel_id = {}
     for key, item in rel_id_to_surface_form.items():
