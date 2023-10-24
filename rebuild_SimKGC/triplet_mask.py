@@ -1,11 +1,17 @@
 import torch
+import os
 
 from argparser import args
 from typing import List
 from data_structures import DataPoint, TrainingTripels, EntityDict
 
-training_triples_class = TrainingTripels("../data/fb15k237/train.json")
-entity_dict = EntityDict("../data/fb15k237/entities.json")
+script_dir = os.path.dirname(__file__)
+
+file_path = os.path.join(script_dir, os.path.join("..", "data", args.task, "train.json"))
+training_triples_class = TrainingTripels(file_path)
+
+file_path = os.path.join(script_dir, os.path.join("..", "data", args.task, "entities.json"))
+entity_dict = EntityDict(file_path)
 
 def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) -> torch.tensor:
     num_rows = len(rows)
