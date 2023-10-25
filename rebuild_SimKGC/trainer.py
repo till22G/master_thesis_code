@@ -55,7 +55,8 @@ class CustomTrainer:
             shuffle=True,
             collate_fn=collate_fn,
             pin_memory=True,
-            drop_last=True
+            drop_last=True,
+            num_workers=self.args.num_workers
         )
         
         self.valid_data_loader = torch.utils.data.DataLoader(
@@ -64,7 +65,8 @@ class CustomTrainer:
             shuffle=True,
             collate_fn=collate_fn,
             pin_memory=True,
-            drop_last=True
+            drop_last=True,
+            num_workers=self.args.num_workers
         )
         
     def training_loop(self):
@@ -97,7 +99,8 @@ class CustomTrainer:
             else:
                 model_output = self.model(**batch_dict)
 
-            model = model.module if hasattr(self.model, "module") else self.model
+
+            self.model = self.model.module if hasattr(self.model, "module") else self.model
             model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
             logits, labels = model_output.get("logits"), model_output.get("labels")
             
@@ -111,7 +114,7 @@ class CustomTrainer:
                     
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(self.optimizer)
-                torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.grad_clip)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
                 
