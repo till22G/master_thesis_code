@@ -20,7 +20,7 @@ python3 -u main.py \
 --t 0.05 \
 --finetune-t \
 --additive-margin 0.02 \
---batch-size 8 \
+--batch-size 512 \
 --pre-batch 2 \
 --use-inverse-triples \
 --use-self-negatives \
@@ -29,4 +29,5 @@ python3 -u main.py \
 --weight-decay 1e-4 \
 --warmup 400 \
 --use-amp \
---grad-clip 10
+--grad-clip 10 \
+--num-workers 2

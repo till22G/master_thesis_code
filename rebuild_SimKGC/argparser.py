@@ -48,6 +48,6 @@ parser.add_argument("--grad-clip", default=10, type=float,
                     help="define value for gradient clip")
 parser.add_argument("--model-dir", default="test_model_dict", type=str,
                     help="define the output diretory for the model")
-parser.add_argument("--num_workers", default=1, type=int,
+parser.add_argument("--num-workers", default=1, type=int,
                     help="specify the number of workers for the data loaders")
 args = parser.parse_args()

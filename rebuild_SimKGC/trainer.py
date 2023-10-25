@@ -19,7 +19,7 @@ class CustomTrainer:
         
         # use GPUs if possible
         if torch.cuda.device_count() > 1:
-            self.model = torch.nn.DataParallel(self.model).cuda()
+            self.model = torch.nn.DataParallel(self.model, device_ids=[0, 1]).cuda()
             logger.info("{} cuda devices found. GPUs will be used".format(torch.cuda.device_count()))
         elif torch.cuda.device_count() == 1:
             self.model.cuda()
@@ -100,8 +100,8 @@ class CustomTrainer:
                 model_output = self.model(**batch_dict)
 
 
-            self.model = self.model.module if hasattr(self.model, "module") else self.model
-            model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
+            model = self.model.module if hasattr(self.model, "module") else self.model
+            model_output = model.compute_logits(encodings=model_output, batch_data=batch_dict)
             logits, labels = model_output.get("logits"), model_output.get("labels")
             
             self.optimizer.zero_grad()
@@ -145,8 +145,8 @@ class CustomTrainer:
             self.model.eval()
             
             model_output = self.model(**batch_dict)
-            model = model.module if hasattr(self.model, "module") else self.model
-            model_output = self.model.compute_logits(encodings=model_output , batch_data=batch_dict)
+            model = self.model.module if hasattr(self.model, "module") else self.model
+            model_output = model.compute_logits(encodings=model_output , batch_data=batch_dict)
             logits, labels = model_output.get("logits"), model_output.get("labels")
             
             # calculate loss
