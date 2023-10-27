@@ -7,13 +7,21 @@ from data_structures import DataPoint, TrainingTripels, EntityDict
 
 script_dir = os.path.dirname(__file__)
 
-file_path = os.path.join(script_dir, os.path.join("..", "data", args.task, "train.json"))
-training_triples_class = TrainingTripels(file_path)
-
-file_path = os.path.join(script_dir, os.path.join("..", "data", args.task, "entities.json"))
-entity_dict = EntityDict(file_path)
+training_triples_class = None
+entity_dict = None
 
 def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) -> torch.tensor:
+    
+    global training_triples_class
+    if training_triples_class is None:
+        file_path = os.path.join(script_dir, os.path.join("..", "data", args.task, "train.json"))
+        training_triples_class = TrainingTripels(file_path)
+
+    global entity_dict
+    if entity_dict is None:
+        file_path = os.path.join(script_dir, os.path.join("..", "data", args.task, "entities.json"))
+        entity_dict = EntityDict(file_path)
+        
     num_rows = len(rows)
     num_cols = num_rows if cols is None else len(cols)
             
@@ -24,7 +32,7 @@ def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) 
     triplet_mask = tail_ids_rows.unsqueeze(1) == tail_ids_cols.unsqueeze(0)
     if cols is None:
         triplet_mask.fill_diagonal_(False)
-        
+ 
     zero_count = 0
     # mask out neighbors
     for i in range(num_rows):
