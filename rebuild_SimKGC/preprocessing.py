@@ -108,7 +108,7 @@ def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, enti
     for triple in all_triples:
         head_id = triple[0]
         if head_id not in entities:
-            entity_name = entity_names[head_id]
+            entity_name = entity_names.get(head_id, None)
             if head_id in entity_descriptions:
                 entity_description = entity_descriptions[head_id]
             else:
@@ -121,7 +121,7 @@ def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, enti
                      
         tail_id = triple[2]
         if tail_id not in entities:
-            entity_name = entity_names[tail_id]
+            entity_name = entity_names.get(tail_id, None)
             if tail_id in entity_descriptions:
                 entity_description = entity_descriptions[tail_id]
             else:
@@ -204,6 +204,148 @@ def _check_duplicates(rel_id_to_surface_form: dict) -> None:
         logger.warning("Attention! Some relations normalize to the same surface form")
         logger.warning(result)
 
+################################################################################################ 
+
+def _load_wiki5m_entity_names(path: str) -> dict:
+    wiki5m_entity_names = {}
+
+    try:
+        with open(path, "r", encoding="utf8") as file:
+            lines = file.readlines()
+            for line in lines:
+                split_line = line.strip().split("\t")
+                entity_name = " ".join(split_line[1:])
+                wiki5m_entity_names[split_line[0]] = " ".join(entity_name.split()[:10])
+            logger.info("Wikidata5m_entity.txt loaded successfully ({})".format(args.task))
+
+    except:
+        global error_count
+        error_count += 1
+        logger.error("Wikidata5m_entity.txt could not be loaded successfully")
+        logger.error(traceback.print_exc())
+    
+    return wiki5m_entity_names
+
+
+def _load_wiki5m_entity_descriptions(path: str) -> dict:
+    wiki5m_entity_descriptions = {}
+
+    try:
+        with open(path, "r", encoding="utf8") as file:
+            lines = file.readlines()
+            for line in lines:
+                split_line = line.strip().split("\t")
+                description = " ".join(split_line[1:])
+                wiki5m_entity_descriptions[split_line[0]] = " ".join(description.split()[:30])
+        logger.info("Wikidata5m_text.txt loaded successfully ({})".format(args.task))
+
+    except:
+        global error_count
+        error_count += 1
+        logger.error("Wikidata5m_text.txt could not be loaded successfully")
+        logger.error(traceback.print_exc())
+
+    return wiki5m_entity_descriptions
+
+
+def _load_wiki5m_relations(path: str) -> dict:
+    wiki5m_relations = {}
+
+    try:
+        with open(path, "r", encoding="utf8") as file:
+            lines = file.readlines()
+            for line in lines:
+                split_line = line.strip().split("\t")
+                relation = " ".join(split_line[1:])
+                wiki5m_relations[split_line[0]] = " ".join(relation.split()[:10])
+        logger.info("Wikidata5m_relation.txt loaded successfully ({})".format(args.task))
+
+    except:
+        global error_count
+        error_count += 1
+        logger.error("Wikidata5m_relation.txt could not be loaded successfully")
+        logger.error(traceback.print_exc())
+
+    return wiki5m_relations
+
+
+
+def _load_wiki5_triples(dataset_path, dataset):
+    triples = []
+    path = os.path.join(dataset_path, "{}.txt".format(dataset))
+    
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+            for line in lines:
+                triples.append(line.strip().split('\t'))
+                
+        logger.info("{} Wikidata5m triples loaded successfully".format(len(triples)))
+        
+    except Exception as e:
+        global error_count
+        error_count += 1
+        logger.error("Wikidata5m data could not be loaded successfully")
+        logger.error(traceback.print_exc())
+             
+    return triples
+
+
+def wiki5m_to_json(triples: list, wiki5m_entity_names: dict, wiki5m_relations: dict, dataset_path: str, dataset: str) -> None:
+    entries = []
+
+    for triple in triples:
+        entry = {}
+        entry["head_id"] = triple[0]
+        entry["head"] = wiki5m_entity_names.get(triple[0], None)
+        entry["relation"] = wiki5m_relations.get(triple[1], None)
+        entry["tail_id"] = triple[2] 
+        entry["tail"] = wiki5m_entity_names.get(triple[2], None)
+
+        entries.append(entry)
+
+    invalid_triples = [entry for entry in entries if _has_none_value(entry)]
+    logger.info('Found {} invalid triples in {}/{}'.format(len(invalid_triples), dataset_path, dataset))
+
+    if dataset == "train":
+        entries = [entry for entry in entries if not _has_none_value(entry)]
+        
+    filename = os.path.join(dataset_path, "{}.json".format(dataset))
+    try:
+        logger.info("Saving Wikidata5m triples as {}".format(filename)) 
+        with open(filename, "w", encoding="utf-8") as out_file:
+            json.dump(entries, out_file, indent = 4, ensure_ascii=False)
+            
+        logger.info("Data saved to {}".format(filename))
+            
+    except Exception as e:
+        global error_count
+        error_count += 1 
+        print("Wikidata5m could not be saved as .json")
+        print(e)
+
+
+def _save_relations(relations: dict, data_dir) -> None:
+    filepath = os.path.join(data_dir, "relations.json")
+    try:
+        with open(filepath, "w", encoding="utf-8") as out_file:
+            json.dump(relations, out_file, ensure_ascii=False, indent=4)
+            logger.info("Save {} realtions to \"{}\"".format(len(relations), filepath))
+
+    except Exception as e:
+        global error_count
+        error_count += 1 
+        logger.warning("Entities could not be saved")
+        logger.warning(traceback.print_exc())
+
+
+def _has_none_value(ex: dict) -> bool:
+    return any(v is None for v in ex.values())
+
+
+#################################################################################################
+
+
 # FB15k_237 entity descriptions
 fbk15_237_entity_descriptions = {}
 error_count = 0
@@ -218,7 +360,7 @@ def main():
     
     datasets = ["train", "valid", "test"]
     
-    dataset_path = os.path.join("..", "data", args.task )
+    dataset_path = os.path.join("..", "data", args.task)
     
     # list containing a dictionary of each triple in the data. The dictionary containes
     # the head_id, the head_name, the normalized relation, the tail_id and the tail name
@@ -236,7 +378,27 @@ def main():
             fbk15_237_to_json(triples, entity_names, dataset_path, dataset)
             all_triples += triples
     
-    _save_FBK15_237_entities_to_json(all_triples, entity_names, entity_descriptions, dataset_path)
+        _save_FBK15_237_entities_to_json(all_triples, entity_names, entity_descriptions, dataset_path)
+
+    elif args.task.lower() in ['wiki5m_trans', 'wiki5m_ind']:
+
+        wiki5m_descriptions_path = os.path.join(dataset_path, "wikidata5m_text.txt")
+        wiki5m_entity_descriptions = _load_wiki5m_entity_descriptions(wiki5m_descriptions_path)
+
+        wiki5m_entity_path = os.path.join(dataset_path, "wikidata5m_entity.txt")
+        wiki5m_entity_names = _load_wiki5m_entity_names(wiki5m_entity_path)
+
+        wiki5m_relations_path = os.path.join(dataset_path, "wikidata5m_relation.txt")
+        wiki5m_relations = _load_wiki5m_relations(wiki5m_relations_path)
+        _save_relations(wiki5m_relations, dataset_path)
+
+        for dataset in datasets:
+            triples = _load_wiki5_triples(dataset_path, dataset)
+            wiki5m_to_json(triples, wiki5m_entity_names, wiki5m_relations, dataset_path, dataset)
+            all_triples += triples
+
+        _save_FBK15_237_entities_to_json(all_triples, wiki5m_entity_names, wiki5m_entity_descriptions, dataset_path)
+    
 
     logger.info("Finished pre-processing with {} errors".format(error_count))
 

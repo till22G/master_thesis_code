@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(prog="replicated SimKGC",
 
 parser.add_argument("--pretrained-model", default="bert-base-uncased", type=str, 
                     help="define the transformer model that is used for encoder initialization")
-parser.add_argument("--task", default="fb15k237", type=str,
+parser.add_argument("--task", default="wiki5m_trans", type=str,
                     help="Select the dataset that is used for training and validation")
 parser.add_argument("--train-path", default="", type=str,
                     help="Define the path to the training data")
