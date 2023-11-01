@@ -9,6 +9,8 @@ echo "working directory: ${DIR}"
 
 cd "$( dirname "$0" )" && cd .. && cd rebuild_SimKGC
 
+DATA_DIR="../data/"$TASK
+
 python3 -u main.py \
 --pretrained-model bert-base-uncased \
 --task ${TASK} \
