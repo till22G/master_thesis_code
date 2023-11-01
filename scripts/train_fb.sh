@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
+set -x
 
 TASK="fb15k237"
 
@@ -14,15 +15,15 @@ DATA_DIR="../data/"$TASK
 python3 -u main.py \
 --pretrained-model bert-base-uncased \
 --task ${TASK} \
---train-path "$DATA_DIR/train.txt.json" \
---valid-path "$DATA_DIR/valid.txt.json" \
+--train-path "$DATA_DIR/train.json" \
+--valid-path "$DATA_DIR/valid.json" \
 --max-number-tokens 50 \
 --use-neighbors \
 --use-descriptions \
 --t 0.05 \
 --finetune-t \
 --additive-margin 0.02 \
---batch-size 8 \
+--batch-size 512 \
 --pre-batch 2 \
 --use-inverse-triples \
 --use-self-negatives \
@@ -32,4 +33,5 @@ python3 -u main.py \
 --warmup 400 \
 --use-amp \
 --grad-clip 10 \
---num-workers 2
+--num-workers 4 \
+--num-epochs 10
