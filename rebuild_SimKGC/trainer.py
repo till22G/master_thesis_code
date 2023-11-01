@@ -126,7 +126,16 @@ class CustomTrainer:
                 self.optimizer.step()
                 
             self.lr_scheduler.step()
-        
+
+            count = 0
+            if (i + 1) % 5000 == 0:
+                count += 100
+                # save model checkpoint
+                save_dict = {"model_state_dict" : self.model.state_dict(),
+                            "args" : self.args.__dict__,
+                            "epoch" : epoch}
+                save_checkpoints(self.args, save_dict, count + epoch)
+                
                 
     def evaluate_epoch(self, epoch):
         if not self.valid_data_loader:
