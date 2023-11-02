@@ -99,7 +99,7 @@ def fbk15_237_to_json(triples: list, entity_names: dict, dataset_path: str, data
         print(e)
         
                 
-def _save_FBK15_237_entities_to_json(all_triples: list, entity_names: dict, entity_descriptions: dict, dataset_path: str) -> None:
+def _save_entities_to_json(all_triples: list, entity_names: dict, entity_descriptions: dict, dataset_path: str) -> None:
    
     count = 0
     entities = {}
@@ -168,7 +168,6 @@ def _rel_to_surface_form(relation: str) -> str:
 # !! check whether I am allowed to use this funciton or not!!!
 
 
-
 def _normalize_relations(triples: list, save_relations: bool=True, data_dir: str=None) -> dict:
     rel_id_to_surface_form = {}
     for item in triples:    
@@ -203,6 +202,110 @@ def _check_duplicates(rel_id_to_surface_form: dict) -> None:
     else:
         logger.warning("Attention! Some relations normalize to the same surface form")
         logger.warning(result)
+
+################################################################################################
+def _load_wn18rr_descriptions(path):
+    entity_descriptions = {}
+    
+    try:
+        with open (path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+            for line in lines:
+                code, word, description = line.strip().split('\t')
+                word = " ".join(word.replace("__", "").split("_")[:-2]).strip()
+                entity_descriptions[code] = (code, word, description)
+        logger.info("wn18rr definitions loaded successfully")
+                
+    except:
+        global error_count
+        error_count += 1
+        logger.error("wn18rr definitions could not be loaded successfully")
+        logger.error(traceback.print_exc())
+
+    return entity_descriptions
+
+
+def _load_wn18rr_relations(path: str) -> dict:
+    wn18rr_relations = {}
+
+    try:
+        with open(path, "r", encoding="utf8") as file:
+            lines = file.readlines()
+            for line in lines:
+                split_line = line.strip().split("\t")
+                wn18rr_relations[split_line[1]] = " ".join(split_line[1].split("_")).strip()
+        logger.info("wn18rr.dict loaded successfully ({})".format(args.task))
+
+    except:
+        global error_count
+        error_count += 1
+        logger.error("Wikidata5m_relation.txt could not be loaded successfully")
+        logger.error(traceback.print_exc())
+
+    return wn18rr_relations
+
+
+def _load_wn18rr_triples(dataset_path, dataset):
+    triples = []
+    path = os.path.join(dataset_path, "{}.txt".format(dataset))
+    
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+            for line in lines:
+                triples.append(line.strip().split('\t'))
+                
+        logger.info("{} wn18rr triples loaded successfully".format(len(triples)))
+        
+    except Exception as e:
+        global error_count
+        error_count += 1
+        logger.error("wn18rr data could not be loaded successfully")
+        logger.error(traceback.print_exc())
+             
+    return triples
+
+def _separate_wr18nn_names_and_description(names_and_descriptions: dict) -> (dict, dict):
+    
+    entity_names = {}
+    entity_descriptions = {}
+
+    for key in names_and_descriptions:
+        _, name, description = names_and_descriptions[key]
+        entity_names[key] = name
+        entity_descriptions[key] = description
+    
+    return (entity_names, entity_descriptions)
+
+
+
+def wn18rr_to_json(triples: list, entity_names: dict, realtion_id_to_surface_form: dict, dataset_path: str, dataset: str) -> None:
+    entries = []
+    
+    for triple in triples:
+        entry = {}
+        entry["head_id"] = triple[0]
+        entry["head"] = entity_names[triple[0]]
+        entry["relation"] = realtion_id_to_surface_form[triple[1]]
+        entry["tail_id"] = triple[2] 
+        entry["tail"] = entity_names[triple[2]]
+
+        entries.append(entry)
+        
+    filename = os.path.join(dataset_path, "{}.json".format(dataset))
+    try:
+        logger.info("Saving wr18nn triples as {}".format(filename)) 
+        with open(filename, "w", encoding="utf-8") as out_file:
+            json.dump(entries, out_file, indent = 4, ensure_ascii=False)
+            
+        logger.info("Data saved to {}".format(filename))
+            
+    except Exception as e:
+        global error_count
+        error_count += 1 
+        print("Data could not be saved as .json")
+        print(e)
+
 
 ################################################################################################ 
 
@@ -335,7 +438,7 @@ def _save_relations(relations: dict, data_dir) -> None:
     except Exception as e:
         global error_count
         error_count += 1 
-        logger.warning("Entities could not be saved")
+        logger.warning("Relations could not be saved")
         logger.warning(traceback.print_exc())
 
 
@@ -367,9 +470,11 @@ def main():
     all_triples = []
     
     # load entity descriptions as dictionary with the the code as key and the descriptions as value
-    if args.task == "fb15k237":
+    if args.task.lower() == "fb15k237":
+
         descriptions_path = os.path.join(dataset_path, "FB15k_mid2description.txt")
         entity_descriptions = _load_fbk15_237_mid2descriptions(descriptions_path)
+
         mid2names_path = os.path.join(dataset_path, "FB15k_mid2name.txt")
         entity_names = _load_fbk15_237_mid2names(mid2names_path)
     
@@ -378,7 +483,26 @@ def main():
             fbk15_237_to_json(triples, entity_names, dataset_path, dataset)
             all_triples += triples
     
-        _save_FBK15_237_entities_to_json(all_triples, entity_names, entity_descriptions, dataset_path)
+        _save_entities_to_json(all_triples, entity_names, entity_descriptions, dataset_path)
+
+    elif args.task.lower() == "wn18rr":
+
+        wn18rr_names_and_descriptions_path = os.path.join(dataset_path, "wordnet-mlj12-definitions.txt")
+        wn18rr_names_and_entity_descriptions = _load_wn18rr_descriptions(wn18rr_names_and_descriptions_path)
+       
+        wn18rr_entity_names, wn18rr_entity_descriptions = _separate_wr18nn_names_and_description(wn18rr_names_and_entity_descriptions)
+
+        wn18rr_relations_path = os.path.join(dataset_path, "relations.dict")
+        wn18rr_relations = _load_wn18rr_relations(wn18rr_relations_path)
+        _save_relations(wn18rr_relations, dataset_path)
+
+        for dataset in datasets:
+            triples = _load_wn18rr_triples(dataset_path, dataset)
+            wn18rr_to_json(triples, wn18rr_entity_names, wn18rr_relations, dataset_path, dataset)
+            all_triples += triples
+
+        _save_entities_to_json(all_triples, wn18rr_entity_names, wn18rr_entity_descriptions, dataset_path)
+        
 
     elif args.task.lower() in ['wiki5m_trans', 'wiki5m_ind']:
 
@@ -397,7 +521,7 @@ def main():
             wiki5m_to_json(triples, wiki5m_entity_names, wiki5m_relations, dataset_path, dataset)
             all_triples += triples
 
-        _save_FBK15_237_entities_to_json(all_triples, wiki5m_entity_names, wiki5m_entity_descriptions, dataset_path)
+        _save_entities_to_json(all_triples, wiki5m_entity_names, wiki5m_entity_descriptions, dataset_path)
     
 
     logger.info("Finished pre-processing with {} errors".format(error_count))
@@ -405,4 +529,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
