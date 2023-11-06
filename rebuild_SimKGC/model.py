@@ -52,7 +52,7 @@ class CustomModel(nn.Module):
         sum_masked_output = torch.sum(last_hidden_states * mask_exp, 1)
         sum_mask = torch.clamp(mask_exp.sum(1), min=1e-4)
         output = sum_masked_output / sum_mask     
-        output = nn.functional.normalize(output, 1) # normlaize result
+        output = nn.functional.normalize(output, dim=1) # normlaize result
         
         return output
         
