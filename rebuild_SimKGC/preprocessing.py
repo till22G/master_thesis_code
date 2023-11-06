@@ -135,7 +135,7 @@ def _save_entities_to_json(all_triples: list, entity_names: dict, entity_descrip
         
     filename = os.path.join(dataset_path, "entities.json")
     try:
-        logger.info("Saving FBK15-237 entity data as {}".format(filename)) 
+        logger.info("Saving entity data as {}".format(filename)) 
         with open(filename, "w", encoding="utf-8") as out_file:
             #json.dump(entries, out_file, indent = 4, ensure_ascii=False)
             json.dump(list(entities.values()), out_file, indent = 4, ensure_ascii=False)
