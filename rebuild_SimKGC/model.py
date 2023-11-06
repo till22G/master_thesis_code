@@ -102,7 +102,6 @@ class CustomModel(nn.Module):
         if self.use_self_negatives and self.training:
             hr_vec, head_vec = encodings["hr_vec"], encodings["h_vec"]
             self_neg_logits = torch.sum(hr_vec * head_vec, dim=1) * self.log_inv_t.exp()
-            """  self_neg_mask = construct_self_negative_mask(batched_datapoints) """
             self_neg_mask = batch_data["self_neg_mask"]
             if torch.cuda.is_available(): self_neg_mask = move_to_cuda(self_neg_mask)
             self_neg_logits = self_neg_logits.masked_fill(self_neg_mask, -1e4)

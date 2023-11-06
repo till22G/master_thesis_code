@@ -6,10 +6,9 @@ import torch.utils.data.dataset
 from tqdm import tqdm
 from typing import Optional, List
 
-from data_structures import Dataset, collate_fn
+from data_structures import Dataset, collate_fn, construct_triplet_mask, construct_self_negative_mask
 from argparser import args
 from logger import logger
-from triplet_mask import construct_triplet_mask, construct_self_negative_mask
 from help_functions import move_to_cuda
 from model import build_model
 
@@ -27,10 +26,7 @@ ckt_dict = torch.load(ckt_path, map_location=lambda storage, loc: storage)
 
 # DataParallel will introduce 'module.' prefix
 state_dict = ckt_dict["model_state_dict"]
-
-state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-
-
+state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()} # remove prefix
 model.load_state_dict(state_dict, strict=True)
 
 # use GPUs if possible
