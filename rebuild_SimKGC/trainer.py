@@ -136,7 +136,7 @@ class CustomTrainer:
                             "epoch" : epoch}
                 save_checkpoints(self.args, save_dict, count + epoch)
                 
-                
+    @torch.no_grad()        
     def evaluate_epoch(self, epoch):
         if not self.valid_data_loader:
             return {}
@@ -178,6 +178,6 @@ class CustomTrainer:
                      "epoch" : epoch}
         
         is_best = self.best_metric is None or runnig_mean_acc[0] > self.best_metric
-        if is_best: best_metric = runnig_mean_acc[0]
+        if is_best: self.best_metric = runnig_mean_acc[0]
         save_checkpoints(self.args, save_dict, epoch, is_best)
         

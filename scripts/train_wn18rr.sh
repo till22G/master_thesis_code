@@ -23,7 +23,7 @@ python3 -u main.py \
 --t 0.05 \
 --finetune-t \
 --additive-margin 0.02 \
---batch-size 512 \
+--batch-size 1024 \
 --pre-batch 0 \
 --use-inverse-triples \
 --use-self-negatives \

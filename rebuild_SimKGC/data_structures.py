@@ -6,9 +6,11 @@ from torch.utils.data import Dataset
 from typing import List, Optional
 from transformers import AutoTokenizer
 
+#from triplet_mask import construct_self_negative_mask, construct_triplet_mask
 from logger import logger
 from argparser import args
 
+script_dir = os.path.dirname(__file__)
 
 tokenizer: AutoTokenizer = None
 
@@ -364,8 +366,8 @@ def collate_fn(batch: List[DataPoint]) -> dict:
         [torch.LongTensor(datapoint["head_token_type_ids"]) for datapoint in batch],
         pad_token_id = tokenizer.pad_token_id, create_mask = False)
     
+    batch_datapoints = [datapoint["obj"] for datapoint in batch]
     
-
     return {"batched_hr_token_ids" : hr_token_ids,
             "batched_hr_mask" : hr_mask,
             "batched_hr_token_type_ids" : hr_token_type_ids,
@@ -375,7 +377,9 @@ def collate_fn(batch: List[DataPoint]) -> dict:
             "batched_head_token_ids" : head_token_ids,
             "batched_head_mask" : head_mask,
             "batched_head_token_type_ids" :head_token_type_ids,
-            "batched_datapoints": batch}
+            "batched_datapoints": batch,
+            "triplet_mask" : construct_triplet_mask(batch_datapoints),
+            "self_neg_mask" : construct_self_negative_mask(batch_datapoints)}
     
 
 def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True):
@@ -393,3 +397,55 @@ def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True
         return batch, mask
     else:
         return batch
+    
+
+training_triples_class = None
+entity_dict = None
+
+def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) -> torch.tensor:
+    
+    global training_triples_class
+    if training_triples_class is None:
+        file_path = os.path.join(script_dir, os.path.join("..", "data", args.task, "train.json"))
+        training_triples_class = TrainingTripels(file_path)
+
+    global entity_dict
+    if entity_dict is None:
+        file_path = os.path.join(script_dir, os.path.join("..", "data", args.task, "entities.json"))
+        entity_dict = EntityDict(file_path)
+        
+    num_rows = len(rows)
+    num_cols = num_rows if cols is None else len(cols)
+            
+    tail_ids_rows = torch.LongTensor([entity_dict.entity_to_idx(datapoint.get_tail_id()) for datapoint in rows])
+    tail_ids_cols = tail_ids_rows if cols is None \
+        else torch.LongTensor([entity_dict.entity_to_idx(datapoint.get_tail_id()) for datapoint in cols])
+    
+    triplet_mask = tail_ids_rows.unsqueeze(1) == tail_ids_cols.unsqueeze(0)
+    if cols is None:
+        triplet_mask.fill_diagonal_(False)
+ 
+    zero_count = 0
+    # mask out neighbors
+    for i in range(num_rows):
+        head, relation = rows[i].get_head_id(), rows[i].get_relation()
+        neighbors = training_triples_class.get_neighbors(head, relation)
+        if len(neighbors) <= 1:
+            if len(neighbors) == 0:
+                zero_count += 1
+            continue
+        for j in range(num_cols):
+            if i == j and cols is None: continue 
+            if tail_ids_cols[j] in neighbors:
+                triplet_mask[i][j] = True
+
+    return triplet_mask
+
+
+def construct_self_negative_mask(datapoints: List[DataPoint]) -> torch.tensor:
+    self_mask = torch.zeros(len(datapoints))
+    for i, item in enumerate(datapoints):
+        neighbors = training_triples_class.get_neighbors(item.get_head_id(), item.get_relation())
+        if item.get_head_id() in neighbors:
+            self_mask[i] = 1
+    return self_mask.bool()

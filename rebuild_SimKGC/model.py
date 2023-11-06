@@ -88,8 +88,9 @@ class CustomModel(nn.Module):
             logits -= torch.zeros(logits.shape).fill_diagonal_(self.add_margin).to(logits.device) # subtract margin
         logits *= self.log_inv_t.exp() # scale with temeratur parameter
     
-        batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
-        triplet_mask = construct_triplet_mask(batched_datapoints)
+        """ batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
+        triplet_mask = construct_triplet_mask(batched_datapoints) """
+        triplet_mask = batch_data["triplet_mask"]
         if torch.cuda.is_available(): triplet_mask = move_to_cuda(triplet_mask)
         
         if triplet_mask is not None:
@@ -104,7 +105,8 @@ class CustomModel(nn.Module):
         if self.use_self_negatives and self.training:
             hr_vec, head_vec = encodings["hr_vec"], encodings["h_vec"]
             self_neg_logits = torch.sum(hr_vec * head_vec, dim=1) * self.log_inv_t.exp()
-            self_neg_mask = construct_self_negative_mask(batched_datapoints)
+            """  self_neg_mask = construct_self_negative_mask(batched_datapoints) """
+            self_neg_mask = batch_data["self_neg_mask"]
             if torch.cuda.is_available(): self_neg_mask = move_to_cuda(self_neg_mask)
             self_neg_logits = self_neg_logits.masked_fill(self_neg_mask, -1e4)
             logits = torch.cat([logits, self_neg_logits.unsqueeze(1)], dim=1)
