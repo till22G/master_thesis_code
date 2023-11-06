@@ -1,6 +1,5 @@
 import torch.utils.data
 import torch.nn as nn
-import os
 
 from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
@@ -19,7 +18,7 @@ class CustomTrainer:
         
         # use GPUs if possible
         if torch.cuda.device_count() > 1:
-            self.model = torch.nn.DataParallel(self.model, device_ids=[0, 1]).cuda()
+            self.model = torch.nn.DataParallel(self.model, device_ids=[i for i in range(torch.cuda.device_count())]).cuda()
             logger.info("{} cuda devices found. GPUs will be used".format(torch.cuda.device_count()))
         elif torch.cuda.device_count() == 1:
             self.model.cuda()

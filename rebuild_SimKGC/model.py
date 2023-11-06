@@ -2,10 +2,9 @@ import torch.nn as nn
 import torch
 
 from transformers import AutoModel, AutoConfig
-
-from triplet_mask import construct_triplet_mask, construct_self_negative_mask
 from logger import logger
 from help_functions import move_to_cuda
+from data_structures import construct_triplet_mask
 
 def build_model(args) -> nn.Module:
     logger.info("Building model")
@@ -88,8 +87,6 @@ class CustomModel(nn.Module):
             logits -= torch.zeros(logits.shape).fill_diagonal_(self.add_margin).to(logits.device) # subtract margin
         logits *= self.log_inv_t.exp() # scale with temeratur parameter
     
-        """ batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
-        triplet_mask = construct_triplet_mask(batched_datapoints) """
         triplet_mask = batch_data["triplet_mask"]
         if torch.cuda.is_available(): triplet_mask = move_to_cuda(triplet_mask)
         
@@ -116,7 +113,7 @@ class CustomModel(nn.Module):
                 "inv_t" : self.log_inv_t.detach().exp(),
                 "hr_vector" : hr_vec.detach(),
                 "tail_vector" : t_vec.detach()}
-        
+
     def _compute_pre_batch_logits(self, hr_vec, t_vec, batch_data):
         batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
         pre_batch_logits = hr_vec.mm(self.pre_batch_vectors.clone().t())
