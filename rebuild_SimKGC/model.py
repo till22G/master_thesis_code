@@ -91,7 +91,7 @@ class CustomModel(nn.Module):
         if torch.cuda.is_available(): triplet_mask = move_to_cuda(triplet_mask)
         
         if triplet_mask is not None:
-            logits.masked_fill(triplet_mask, -1e4)
+            logits.masked_fill_(triplet_mask, -1e4)
 
         # add pre batch logits here
         if self.pre_batch > 0 and self.training:
