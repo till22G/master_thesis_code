@@ -28,10 +28,10 @@ python3 -u main.py \
 --use-inverse-triples \
 --use-self-negatives \
 --pre-batch-weight 0.05 \
---learning-rate 2e-5 \
+--learning-rate 5e-5 \
 --weight-decay 1e-4 \
 --warmup 400 \
 --use-amp \
 --grad-clip 10 \
---num-workers 4 \
---num-epochs 10
+--num-workers 12 \
+--num-epochs 50
