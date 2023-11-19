@@ -2,3 +2,5 @@
 .vscode
 __pycache__/
 /model_checkpoints
+rebuild_SimKGC/data
+rebuild_SimKGC/scripts

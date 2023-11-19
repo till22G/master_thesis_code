@@ -20,7 +20,7 @@ def save_checkpoint(state: dict, is_best: bool, filename: str):
     shutil.copyfile(filename, os.path.dirname(filename) + '/model_last.mdl')
 
 
-def delete_old_ckt(path_pattern: str, keep=5):
+def delete_old_ckt(path_pattern: str, keep=3):
     files = sorted(glob.glob(path_pattern), key=os.path.getmtime, reverse=True)
     for f in files[keep:]:
         logger.info('Delete old checkpoint {}'.format(f))
