@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 
+from dataclasses import dataclass
 from transformers import AutoModel, AutoConfig
 from logger import logger
 from help_functions import move_to_cuda
@@ -8,6 +9,19 @@ from data_structures import construct_triplet_mask
 
 def build_model(args) -> nn.Module:
     logger.info("Building model")
+    return CustomModel(args)
+
+@dataclass
+class ModelOutput:
+    logits: torch.tensor
+    labels: torch.tensor
+    inv_t: torch.tensor
+    hr_vector: torch.tensor
+    tail_vector: torch.tensor
+
+
+def build_model(args) -> nn.Module:
+    logger.info("Building model ...")
     return CustomModel(args)
 
 class CustomModel(nn.Module):
@@ -46,7 +60,7 @@ class CustomModel(nn.Module):
         
         last_hidden_states = output.last_hidden_state
  
-        # perform mean pooling 
+        # perform mean pooling
         mask_exp = input_mask.unsqueeze(-1).expand(last_hidden_states.size()).long()
         sum_masked_output = torch.sum(last_hidden_states * mask_exp, 1)
         sum_mask = torch.clamp(mask_exp.sum(1), min=1e-4)
@@ -57,37 +71,59 @@ class CustomModel(nn.Module):
         
     def forward(self, batched_hr_token_ids, batched_hr_mask, batched_hr_token_type_ids,
                       batched_tail_token_ids, batched_tail_mask, batched_tail_token_type_ids,
-                      batched_head_token_ids, batched_head_mask, batched_head_token_type_ids, **kwargs): 
+                      batched_head_token_ids, batched_head_mask, batched_head_token_type_ids,
+                      encode_tail_only = False, encode_hr_only = False,
+                      only_ent_embedding = False, **kwargs):
+        
+        """ if only_ent_embedding:
+            ent_vec = self._encode(self.bert_t,
+                                tail_token_ids,
+                                tail_mask,
+                                tail_token_type_ids)
+            return {"ent_vectors": ent_vec} """
+       
+        if only_ent_embedding:
+            encode_tail_only = True
 
+
+        if not encode_hr_only:
+            t_vec = self._encode(self.bert_t,
+                                batched_tail_token_ids,
+                                batched_tail_mask,
+                                batched_tail_token_type_ids)
+        
+        if encode_tail_only:
+            return {'ent_vectors': t_vec.detach()}
+            
         hr_vec = self._encode(self.bert_hr,
                               batched_hr_token_ids,
                               batched_hr_mask,
                               batched_hr_token_type_ids)
         
-        t_vec = self._encode(self.bert_t,
-                             batched_tail_token_ids,
-                             batched_tail_mask,
-                             batched_tail_token_type_ids)
+        if encode_hr_only:
+            return {'hr_vec': hr_vec.detach()}
         
         h_vec = self._encode(self.bert_t,
                              batched_head_token_ids,
                              batched_head_mask,
                              batched_head_token_type_ids)
         
-        return {"hr_vec" : hr_vec,
-                "t_vec" : t_vec,
-                "h_vec" : h_vec}
+        return {"hr_vector" : hr_vec,
+                "tail_vector" : t_vec,
+                "head_vector" : h_vec}
     
-    def compute_logits(self, encodings: dict, batch_data: dict) -> dict: 
-        hr_vec, t_vec = encodings["hr_vec"], encodings["t_vec"]
+    def compute_logits(self, output_dict: dict, batch_dict: dict) -> dict:
+        encodings = output_dict
+        batch_data = batch_dict
+        hr_vec, t_vec = encodings["hr_vector"], encodings["tail_vector"]
         labels = torch.arange(hr_vec.size(0)).to(hr_vec.device)
-        
+
         logits = hr_vec.mm(t_vec.t()) # calculate cos-similarity
         if self.training:
             logits -= torch.zeros(logits.shape).fill_diagonal_(self.add_margin).to(logits.device) # subtract margin
         logits *= self.log_inv_t.exp() # scale with temeratur parameter
     
-        triplet_mask = batch_data["triplet_mask"]
+        triplet_mask = batch_data.get('triplet_mask', None)
         if torch.cuda.is_available(): triplet_mask = move_to_cuda(triplet_mask)
         
         if triplet_mask is not None:
@@ -100,11 +136,11 @@ class CustomModel(nn.Module):
                         
         # add self negatives here
         if self.use_self_negatives and self.training:
-            hr_vec, head_vec = encodings["hr_vec"], encodings["h_vec"]
+            hr_vec, head_vec = encodings["hr_vector"], encodings["head_vector"]
             self_neg_logits = torch.sum(hr_vec * head_vec, dim=1) * self.log_inv_t.exp()
             self_neg_mask = batch_data["self_neg_mask"]
             if torch.cuda.is_available(): self_neg_mask = move_to_cuda(self_neg_mask)
-            self_neg_logits = self_neg_logits.masked_fill(self_neg_mask, -1e4)
+            self_neg_logits = self_neg_logits.masked_fill_(self_neg_mask, -1e4)
             logits = torch.cat([logits, self_neg_logits.unsqueeze(1)], dim=1)
             
         return {"logits" : logits,
@@ -120,7 +156,7 @@ class CustomModel(nn.Module):
 
         if self.pre_batch_datapoints[-1] is not None:
             pre_batch_triplet_mask = construct_triplet_mask(batched_datapoints, self.pre_batch_datapoints).to(hr_vec.device)
-            pre_batch_logits.masked_fill(pre_batch_triplet_mask, -1e4)
+            pre_batch_logits.masked_fill_(pre_batch_triplet_mask, -1e4)
         
         self.pre_batch_vectors[self.offset:(self.offset + self.batch_size)] = t_vec.data.clone()
         self.pre_batch_datapoints[self.offset:(self.offset + self.batch_size)] = batched_datapoints

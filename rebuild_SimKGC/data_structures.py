@@ -322,16 +322,16 @@ def load_data(path: str, inverse_triples: bool = True) -> List[DataPoint]:
                                         entities[item["head_id"]].get("entity_desc", ""),
                                         item["relation"], 
                                         item["tail_id"],
-                                        entities[item["tail_id"]].get("entity_desc", ""),
-                                        item["tail"]))
+                                        item["tail"],
+                                        entities[item["tail_id"]].get("entity_desc", "")))
             if inverse_triples:
                 datapoints.append(DataPoint(item["tail_id"],
                                             item["tail"],
                                             entities[item["tail_id"]].get("entity_desc", ""),
                                             " ".join(("inverse", item["relation"])), 
                                             item["head_id"],
-                                            entities[item["head_id"]].get("entity_desc", ""),
-                                            item["head"]))
+                                            item["head"],
+                                            entities[item["head_id"]].get("entity_desc", "")))
                 
         logger.info("Created dataset with {} datapoints".format(len(datapoints)))
             
