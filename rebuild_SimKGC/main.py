@@ -11,6 +11,8 @@ from trainer import CustomTrainer
 
 def main():
     logger.info("Entered Main")
+    if not os.path.exists(args.model_dir):
+        os.makedirs(args.model_dir)
     
     # change directory, so the script will find the data
     abspath = os.path.abspath(__file__)

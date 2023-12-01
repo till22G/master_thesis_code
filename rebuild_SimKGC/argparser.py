@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(prog="replicated SimKGC",
 
 parser.add_argument("--pretrained-model", default="bert-base-uncased", type=str, 
                     help="define the transformer model that is used for encoder initialization")
-parser.add_argument("--task", default="wiki5m_trans", type=str,
+parser.add_argument("--task", default="wn18rr", type=str,
                     help="Select the dataset that is used for training and validation")
 parser.add_argument("--train-path", default="", type=str,
                     help="Define the path to the training data")
@@ -50,4 +50,10 @@ parser.add_argument("--model-dir", default="test_model_dict", type=str,
                     help="define the output diretory for the model")
 parser.add_argument("--num-workers", default=1, type=int,
                     help="specify the number of workers for the data loaders")
+
+# their arguments
+parser.add_argument("--is-test", action="store_true")
+parser.add_argument("--eval-model-path")
+parser.add_argument("--neighbor-weight", default=0.05, type=float)
+parser.add_argument("--rerank-n-hop", default=2, type=int)
 args = parser.parse_args()

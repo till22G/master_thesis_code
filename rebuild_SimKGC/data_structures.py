@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import Dataset
 from typing import List, Optional
 from transformers import AutoTokenizer
+from collections import deque
 
 #from triplet_mask import construct_self_negative_mask, construct_triplet_mask
 from logger import logger
@@ -17,7 +18,6 @@ tokenizer: AutoTokenizer = None
 entities = {}
 neigborhood_graph = None
 training_triples_class = None
-
 
 class EntityDict():
     def __init__(self, path) -> None:
@@ -52,25 +52,29 @@ class EntityDict():
 
 
 class TrainingTripels():
-    def __init__(self, path) -> None:
+    def __init__(self, path_list) -> None:
         self.training_triples = []
         self.hr2tails = {}
-        
-        self._load_training_tripels(path)
+
+        for path in path_list:
+            print(path)
+            self._load_training_tripels(path)
         
     def _load_training_tripels(self, path) -> None:
         
-        assert os.path.exists(path), "Path is invalid {}:".format(path)
+        assert os.path.exists(path), "Path is invalid {path}"
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
-        logger.info("Loading training triples from {}".format(path))
+        #logger.info("Loading training triples from {}".format(path))
         
         with open(path, "r", encoding="utf-8") as inflile:
             data = json.load(inflile)
                 
         for item in data:
             self.training_triples.append(item)
-            if args.use_inverse_triples:
+            #############################################################
+            if True:
+            #################################################################
                 inv_item = {"head_id": item["tail_id"],
                             "head" : item["tail"],
                             "relation": " ".join(("inverse", item["relation"])),
@@ -84,10 +88,7 @@ class TrainingTripels():
             if key not in self.hr2tails:
                 self.hr2tails[key] = set()
             self.hr2tails[key].add(item["tail_id"])
-            
-        logger.info("Loaded {} training triples. Added inverse triples: {}".format(len(self.training_triples), args.use_inverse_triples))
-            
-            
+
     def get_neighbors(self, head_id: str, relation: str) -> set:
         return self.hr2tails.get((head_id, relation), set())
     
@@ -101,12 +102,11 @@ class TrainingTripels():
 class NeighborhoodGraph():
     def __init__(self, path) -> None:
         self.graph = {}
-
         logger.info("Building neighborhood graph from {}".format(path))
             
         global training_triples_class
         if training_triples_class is None:
-            training_triples_class = TrainingTripels(path)
+            training_triples_class = TrainingTripels([path])
             
         for item in training_triples_class.get_triplet_list():
             if item["head_id"] not in self.graph:
@@ -124,10 +124,34 @@ class NeighborhoodGraph():
         neigbours = sorted(self.graph.get(entity_id, set()))
         return neigbours[:num_neigbhours]
     
+    def get_n_hop_entity_indices(self, entity_id: str,
+                                 entity_dict: EntityDict,
+                                 n_hop: int = 2,
+                                 # return empty if exceeds this number
+                                 max_nodes: int = 100000) -> set:
+        if n_hop < 0:
+            return set()
+
+        seen_eids = set()
+        seen_eids.add(entity_id)
+        queue = deque([entity_id])
+        for i in range(n_hop):
+            len_q = len(queue)
+            for _ in range(len_q):
+                tp = queue.popleft()
+                for node in self.graph.get(tp, set()):
+                    if node not in seen_eids:
+                        queue.append(node)
+                        seen_eids.add(node)
+                        if len(seen_eids) > max_nodes:
+                            return set()
+        return set([entity_dict.entity_to_idx(e_id) for e_id in seen_eids])
+    
 
 def build_neighborhood_graph():
     global neigborhood_graph
-    neigborhood_graph =  NeighborhoodGraph(args.train_path)
+    neigborhood_graph = NeighborhoodGraph(args.train_path)
+    return neigborhood_graph
     
     
     
@@ -174,7 +198,8 @@ def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
 def create_tokenizer():
     global tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
-    logger.info("Created tokenizer from {}".format(args.pretrained_model))
+    #logger.info("Created tokenizer from {}".format(args.pretrained_model))
+    return tokenizer
 
     
 class DataPoint():
@@ -252,8 +277,17 @@ class DataPoint():
                   
         head_text = _concat_name_desciption(self.head, head_desc)
         hr_tokens = _tokenize_text(head_text, self.relation)
-        t_tokens = _tokenize_text(self.tail)
+        tail_text = _concat_name_desciption(self.tail, tail_desc)
+        t_tokens = _tokenize_text(tail_text)
         h_tokens = _tokenize_text(self.head)
+
+        """ print("------------ head decodet -----------------")
+        decoded_hr_tokens =  create_tokenizer().decode(hr_tokens["input_ids"])
+        print(decoded_hr_tokens)
+        print("------------ tail decodet -----------------")
+        decoded_tail_tokens =  create_tokenizer().decode(t_tokens["input_ids"])
+        print(decoded_tail_tokens)
+        print("---------------------------------------") """
                  
         return {'hr_token_ids': hr_tokens["input_ids"],
                 'hr_token_type_ids': hr_tokens["token_type_ids"],
@@ -269,12 +303,18 @@ class DataPoint():
 def add_neighbor_names(head_id, tail_id):
     global neigborhood_graph
     if neigborhood_graph is None:
-        build_neighborhood_graph()
+        neigborhood_graph = build_neighborhood_graph()
     neighbor_ids = neigborhood_graph.get_neighbors(head_id)
     
     if tail_id in neighbor_ids:
         neighbor_ids.remove(tail_id)
-    
+
+    global entities
+    if not entities:
+        #print("---------------")
+        #print(os.path.join("data", args.task, "entities.json"))
+        load_entities(os.path.join("data", args.task, "entities.json"))
+
     neighbor_names = [entities[entity_id].get("entity", "") for entity_id in neighbor_ids]
     return " ".join(neighbor_names)
 
@@ -284,15 +324,15 @@ class Dataset(Dataset):
         super().__init__()
         
         self.path = path 
-        assert os.path.exists(self.path), "Path is invalid: {}".format(path)
-        assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
+        assert os.path.exists(self.path) or data_points, "Path is invalid: {}".format(path)
+        assert path.endswith(".json") or data_points, "Path has wrong formattig. JSON format expected"
         
         if data_points is None:
             self.data_points = []
             self.data_points = load_data(self.path, inverse_triples=args.use_inverse_triples)
             
         else:
-            data_points = data_points
+            self.data_points = data_points
             
     def __len__(self) -> int:
         return len(self.data_points)
@@ -301,7 +341,7 @@ class Dataset(Dataset):
         return self.data_points[index].encode_to_dict()
             
 
-def load_data(path: str, inverse_triples: bool = True) -> List[DataPoint]:
+""" def load_data(path: str, inverse_triples: bool = True) -> List[DataPoint]:
         global entities
         if not entities:
             load_entities(os.path.join(os.path.dirname(args.train_path), "entities.json"))
@@ -334,6 +374,45 @@ def load_data(path: str, inverse_triples: bool = True) -> List[DataPoint]:
                                             entities[item["head_id"]].get("entity_desc", "")))
                 
         logger.info("Created dataset with {} datapoints".format(len(datapoints)))
+            
+        return datapoints """
+
+def load_data(path: str, add_forward_triplet: bool = True, add_backward_triplet: bool = True) -> List[DataPoint]:
+        
+        if not entities:
+            load_entities(os.path.join(os.path.dirname(args.train_path), "entities.json"))
+        
+        with open(path, "r", encoding="utf-8") as infile:
+            data = json.load(infile)
+        
+        #logger.info("Load {} datapoints from {}".format(len(data), path))
+        
+            
+        """ if inverse_triples:
+            logger.info("Adding inverse triples") """
+            
+        datapoints = []
+        for item in data:
+            if add_forward_triplet:
+                datapoints.append(DataPoint(item["head_id"],
+                                            item["head"],
+                                            entities[item["head_id"]].get("entity_desc", ""),
+                                            item["relation"], 
+                                            item["tail_id"],
+                                            entities[item["tail_id"]].get("entity_desc", ""),
+                                            item["tail"]
+                                            ))
+            if add_backward_triplet:
+                datapoints.append(DataPoint(item["tail_id"],
+                                            item["tail"],
+                                            entities[item["tail_id"]].get("entity_desc", ""),
+                                            "inverse {}".format(item["relation"]), 
+                                            item["head_id"],
+                                            entities[item["head_id"]].get("entity_desc", ""),
+                                            item["head"]
+                                            ))
+                
+        #logger.info("Created dataset with {} datapoints".format(len(datapoints)))
             
         return datapoints
     
