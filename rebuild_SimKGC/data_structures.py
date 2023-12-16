@@ -197,7 +197,8 @@ def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
 
 def create_tokenizer():
     global tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
+    if tokenizer == None:
+        tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
     #logger.info("Created tokenizer from {}".format(args.pretrained_model))
     return tokenizer
 
@@ -276,18 +277,21 @@ class DataPoint():
                 tail_desc = " ".join((tail_desc, add_neighbor_names(self.tail_id, self.head_id)))
                   
         head_text = _concat_name_desciption(self.head, head_desc)
-        hr_tokens = _tokenize_text(head_text, self.relation)
+        hr_tokens = _tokenize_text(text=head_text, relation=self.relation)
         tail_text = _concat_name_desciption(self.tail, tail_desc)
         t_tokens = _tokenize_text(tail_text)
-        h_tokens = _tokenize_text(self.head)
+        h_tokens = _tokenize_text(head_text)
 
-        """ print("------------ head decodet -----------------")
+        print("------------ head-rel decoded -----------------")
         decoded_hr_tokens =  create_tokenizer().decode(hr_tokens["input_ids"])
         print(decoded_hr_tokens)
-        print("------------ tail decodet -----------------")
+        print("------------ tail decoded -----------------")
         decoded_tail_tokens =  create_tokenizer().decode(t_tokens["input_ids"])
         print(decoded_tail_tokens)
-        print("---------------------------------------") """
+        print("------------ head decoded -----------------")
+        decoded_head_tokens =  create_tokenizer().decode(h_tokens["input_ids"])
+        print(decoded_head_tokens)
+        print("---------------------------------------")
                  
         return {'hr_token_ids': hr_tokens["input_ids"],
                 'hr_token_type_ids': hr_tokens["token_type_ids"],
