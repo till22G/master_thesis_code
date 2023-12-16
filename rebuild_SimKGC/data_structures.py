@@ -57,12 +57,12 @@ class TrainingTripels():
         self.hr2tails = {}
 
         for path in path_list:
-            print(path)
             self._load_training_tripels(path)
         
     def _load_training_tripels(self, path) -> None:
         
         assert os.path.exists(path), "Path is invalid {path}"
+        print(f"Asserting path {path}")
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
         #logger.info("Loading training triples from {}".format(path))
@@ -329,7 +329,7 @@ class Dataset(Dataset):
         
         if data_points is None:
             self.data_points = []
-            self.data_points = load_data(self.path, inverse_triples=args.use_inverse_triples)
+            self.data_points = load_data(self.path)
             
         else:
             self.data_points = data_points
@@ -456,7 +456,7 @@ def collate_fn(batch: List[DataPoint]) -> dict:
             "batched_head_token_ids" : head_token_ids,
             "batched_head_mask" : head_mask,
             "batched_head_token_type_ids" :head_token_type_ids,
-            "batched_datapoints": batch,
+            "batched_datapoints": batch_datapoints,
             "triplet_mask" : construct_triplet_mask(batch_datapoints),
             "self_neg_mask" : construct_self_negative_mask(batch_datapoints)}
     
@@ -486,7 +486,7 @@ def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) 
     global training_triples_class
     if training_triples_class is None:
         file_path = os.path.join(script_dir, os.path.join("data", args.task, "train.json"))
-        training_triples_class = TrainingTripels(file_path)
+        training_triples_class = TrainingTripels([file_path])
 
     global entity_dict
     if entity_dict is None:

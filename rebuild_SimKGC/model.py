@@ -52,11 +52,10 @@ class CustomModel(nn.Module):
         self.bert_hr = AutoModel.from_pretrained(args.pretrained_model) # create bert model for relation aware embeddings
         self.bert_t = AutoModel.from_pretrained(args.pretrained_model) # create bert model for tail entity embeddings
         
-    def _encode(self, model, input_token_ids, input_mask, #input_token_type_ids
-                ):
+    def _encode(self, model, input_token_ids, input_mask, input_token_type_ids):
         output = model(input_ids=input_token_ids,
                        attention_mask=input_mask,
-                       #token_type_ids=input_token_type_ids,
+                       token_type_ids=input_token_type_ids,
                        return_dict=True)
         
         last_hidden_states = output.last_hidden_state
@@ -78,7 +77,7 @@ class CustomModel(nn.Module):
         
         """ if only_ent_embedding:
             ent_vec = self._encode(self.bert_t,
-                                tail_token_ids,
+                                tail_token_ids,w
                                 tail_mask,
                                 tail_token_type_ids)
             return {"ent_vectors": ent_vec} """
@@ -91,7 +90,7 @@ class CustomModel(nn.Module):
             t_vec = self._encode(self.bert_t,
                                 batched_tail_token_ids,
                                 batched_tail_mask,
-                                #batched_tail_token_type_ids
+                                batched_tail_token_type_ids
                                 )
         
         if encode_tail_only:
@@ -100,7 +99,7 @@ class CustomModel(nn.Module):
         hr_vec = self._encode(self.bert_hr,
                               batched_hr_token_ids,
                               batched_hr_mask,
-                              #batched_hr_token_type_ids
+                              batched_hr_token_type_ids
                               )
         
         if encode_hr_only:
@@ -109,7 +108,7 @@ class CustomModel(nn.Module):
         h_vec = self._encode(self.bert_t,
                              batched_head_token_ids,
                              batched_head_mask,
-                             #batched_head_token_type_ids
+                             batched_head_token_type_ids
                              )
         
         return {"hr_vector" : hr_vec,

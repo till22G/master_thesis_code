@@ -56,7 +56,7 @@ class CustomTrainer:
             batch_size=args.batch_size,
             shuffle=True,
             collate_fn=collate_fn,
-            num_workers=1,
+            num_workers=args.num_workers,
             pin_memory=True,
             drop_last=True)
 
