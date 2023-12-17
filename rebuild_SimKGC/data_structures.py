@@ -62,7 +62,6 @@ class TrainingTripels():
     def _load_training_tripels(self, path) -> None:
         
         assert os.path.exists(path), "Path is invalid {path}"
-        print(f"Asserting path {path}")
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
         #logger.info("Loading training triples from {}".format(path))
@@ -102,7 +101,7 @@ class TrainingTripels():
 class NeighborhoodGraph():
     def __init__(self, path) -> None:
         self.graph = {}
-        logger.info("Building neighborhood graph from {}".format(path))
+        #logger.info("Building neighborhood graph from {}".format(path))
             
         global training_triples_class
         if training_triples_class is None:
@@ -117,7 +116,7 @@ class NeighborhoodGraph():
                 self.graph[item["tail_id"]] = set()
             self.graph[item["tail_id"]].add(item["head_id"])
         
-        logger.info("Neighborhood graph succesfully build")
+        #logger.info("Neighborhood graph succesfully build")
             
         
     def get_neighbors(self, entity_id: str, num_neigbhours: int = 10):
@@ -199,7 +198,7 @@ def create_tokenizer():
     global tokenizer
     if tokenizer == None:
         tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
-    #logger.info("Created tokenizer from {}".format(args.pretrained_model))
+        #logger.info("Created tokenizer from {}".format(args.pretrained_model))
     return tokenizer
 
     
@@ -276,13 +275,15 @@ class DataPoint():
             if len(tail_desc.split()) < 20:
                 tail_desc = " ".join((tail_desc, add_neighbor_names(self.tail_id, self.head_id)))
                   
-        head_text = _concat_name_desciption(self.head, head_desc)
+        head_text = _concat_name_desciption(self.get_head(), head_desc)
         hr_tokens = _tokenize_text(text=head_text, relation=self.relation)
-        tail_text = _concat_name_desciption(self.tail, tail_desc)
+        
+        tail_text = _concat_name_desciption(self.get_tail(), tail_desc)
         t_tokens = _tokenize_text(tail_text)
+        
         h_tokens = _tokenize_text(head_text)
 
-        print("------------ head-rel decoded -----------------")
+        """ print("------------ head-rel decoded -----------------")
         decoded_hr_tokens =  create_tokenizer().decode(hr_tokens["input_ids"])
         print(decoded_hr_tokens)
         print("------------ tail decoded -----------------")
@@ -291,7 +292,7 @@ class DataPoint():
         print("------------ head decoded -----------------")
         decoded_head_tokens =  create_tokenizer().decode(h_tokens["input_ids"])
         print(decoded_head_tokens)
-        print("---------------------------------------")
+        print("---------------------------------------") """
                  
         return {'hr_token_ids': hr_tokens["input_ids"],
                 'hr_token_type_ids': hr_tokens["token_type_ids"],
@@ -323,7 +324,7 @@ def add_neighbor_names(head_id, tail_id):
     return " ".join(neighbor_names)
 
 
-class Dataset(Dataset):
+""" class Dataset(Dataset):
     def __init__(self, path, data_points=None) -> None:
         super().__init__()
         
@@ -335,6 +336,27 @@ class Dataset(Dataset):
             self.data_points = []
             self.data_points = load_data(self.path)
             
+        else:
+            self.data_points = data_points
+            
+    def __len__(self) -> int:
+        return len(self.data_points)
+    
+    def __getitem__(self, index) -> DataPoint:
+        return self.data_points[index].encode_to_dict() """
+
+class Dataset(torch.utils.data.dataset.Dataset):
+    def __init__(self, path, data_points=None) -> None:
+        super().__init__()
+        
+        self.path = path 
+        assert os.path.exists(self.path) or data_points, "Path is invalid: {}".format(path)
+        assert path.endswith(".json") or data_points, "Path has wrong formattig. JSON format expected"
+
+        if data_points is None:
+            self.data_points = []
+            self.data_points = load_data(self.path)
+          
         else:
             self.data_points = data_points
             
@@ -382,7 +404,7 @@ class Dataset(Dataset):
         return datapoints """
 
 def load_data(path: str, add_forward_triplet: bool = True, add_backward_triplet: bool = True) -> List[DataPoint]:
-        
+        global entities
         if not entities:
             load_entities(os.path.join(os.path.dirname(args.train_path), "entities.json"))
         
@@ -403,8 +425,8 @@ def load_data(path: str, add_forward_triplet: bool = True, add_backward_triplet:
                                             entities[item["head_id"]].get("entity_desc", ""),
                                             item["relation"], 
                                             item["tail_id"],
-                                            entities[item["tail_id"]].get("entity_desc", ""),
-                                            item["tail"]
+                                            item["tail"],
+                                            entities[item["tail_id"]].get("entity_desc", "")
                                             ))
             if add_backward_triplet:
                 datapoints.append(DataPoint(item["tail_id"],
@@ -412,15 +434,78 @@ def load_data(path: str, add_forward_triplet: bool = True, add_backward_triplet:
                                             entities[item["tail_id"]].get("entity_desc", ""),
                                             "inverse {}".format(item["relation"]), 
                                             item["head_id"],
-                                            entities[item["head_id"]].get("entity_desc", ""),
-                                            item["head"]
+                                            item["head"],
+                                            entities[item["head_id"]].get("entity_desc", "")
                                             ))
                 
         #logger.info("Created dataset with {} datapoints".format(len(datapoints)))
             
         return datapoints
     
-def collate_fn(batch: List[DataPoint]) -> dict:
+def collate_fn(batch: List[dict]) -> dict:
+
+    global tokenizer
+    if tokenizer is None:
+        tokenizer = create_tokenizer()
+        
+    
+    hr_token_ids, hr_mask = batch_token_ids_and_mask(
+        [torch.LongTensor(datapoint["hr_token_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id)
+    
+    tail_token_ids, tail_mask = batch_token_ids_and_mask(
+        [torch.LongTensor(datapoint["tail_token_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id)
+    
+    head_token_ids, head_mask = batch_token_ids_and_mask(
+        [torch.LongTensor(datapoint["head_token_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id)
+    
+    hr_token_type_ids = batch_token_ids_and_mask (
+        [torch.LongTensor(datapoint["hr_token_type_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id, create_mask = False)
+    
+    tail_token_type_ids = batch_token_ids_and_mask (
+        [torch.LongTensor(datapoint["tail_token_type_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id, create_mask = False)
+    
+    head_token_type_ids = batch_token_ids_and_mask (
+        [torch.LongTensor(datapoint["head_token_type_ids"]) for datapoint in batch],
+        pad_token_id = tokenizer.pad_token_id, create_mask = False)
+    
+    batch_datapoints = [datapoint["obj"] for datapoint in batch]
+    
+    return {"batched_hr_token_ids" : hr_token_ids,
+            "batched_hr_mask" : hr_mask,
+            "batched_hr_token_type_ids" : hr_token_type_ids,
+            "batched_tail_token_ids" : tail_token_ids,
+            "batched_tail_mask" : tail_mask,
+            "batched_tail_token_type_ids" : tail_token_type_ids,
+            "batched_head_token_ids" : head_token_ids,
+            "batched_head_mask" : head_mask,
+            "batched_head_token_type_ids" : head_token_type_ids,
+            "batched_datapoints": batch_datapoints,
+            "triplet_mask" : construct_triplet_mask(rows=batch_datapoints) if not args.is_test else None,
+            "self_neg_mask" : construct_self_negative_mask(batch_datapoints) if not args.is_test else None,}
+
+
+def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True):
+
+    max_length = max([item.size(0) for item in data_batch_tensor])
+    num_samples =len(data_batch_tensor)
+    batch = torch.LongTensor(num_samples, max_length).fill_(pad_token_id)
+    if create_mask:
+        mask = torch.ByteTensor(num_samples, max_length).fill_(0)
+    for i, tensor in enumerate(data_batch_tensor):
+        batch[i, :len(tensor)].copy_(tensor)
+        if create_mask:
+            mask[i, :len(tensor)].fill_(1)
+    
+    if create_mask:
+        return batch, mask
+    else:
+        return batch   
+""" def collate_fn(batch: List[DataPoint]) -> dict:
     
     if tokenizer is None:
         create_tokenizer()
@@ -459,7 +544,7 @@ def collate_fn(batch: List[DataPoint]) -> dict:
             "batched_tail_token_type_ids" : tail_token_type_ids,
             "batched_head_token_ids" : head_token_ids,
             "batched_head_mask" : head_mask,
-            "batched_head_token_type_ids" :head_token_type_ids,
+            "batched_head_token_type_ids" : head_token_type_ids,
             "batched_datapoints": batch_datapoints,
             "triplet_mask" : construct_triplet_mask(batch_datapoints),
             "self_neg_mask" : construct_self_negative_mask(batch_datapoints)}
@@ -479,7 +564,7 @@ def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True
     if create_mask:
         return batch, mask
     else:
-        return batch
+        return batch """
     
 
 training_triples_class = None
@@ -525,10 +610,19 @@ def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) 
     return triplet_mask
 
 
-def construct_self_negative_mask(datapoints: List[DataPoint]) -> torch.tensor:
+""" def construct_self_negative_mask(datapoints: List[DataPoint]) -> torch.tensor:
     self_mask = torch.zeros(len(datapoints))
     for i, item in enumerate(datapoints):
         neighbors = training_triples_class.get_neighbors(item.get_head_id(), item.get_relation())
         if item.get_head_id() in neighbors:
             self_mask[i] = 1
-    return self_mask.bool()
+    return self_mask.bool() """
+
+def construct_self_negative_mask(exs: List) -> torch.tensor:
+    mask = torch.ones(len(exs))
+    for idx, ex in enumerate(exs):
+        head_id, relation = ex.head_id, ex.relation
+        neighbor_ids = training_triples_class.get_neighbors(head_id, relation)
+        if head_id in neighbor_ids:
+            mask[idx] = 0
+    return ~mask.bool()

@@ -77,7 +77,7 @@ class CustomModel(nn.Module):
         
         """ if only_ent_embedding:
             ent_vec = self._encode(self.bert_t,
-                                tail_token_ids,w
+                                tail_token_ids,
                                 tail_mask,
                                 tail_token_type_ids)
             return {"ent_vectors": ent_vec} """
