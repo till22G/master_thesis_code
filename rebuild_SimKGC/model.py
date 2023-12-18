@@ -153,7 +153,7 @@ class CustomModel(nn.Module):
                 "tail_vector" : t_vec.detach()}
 
     def _compute_pre_batch_logits(self, hr_vec, t_vec, batch_data):
-        batched_datapoints = [datapoint["obj"] for datapoint in batch_data["batched_datapoints"]]
+        batched_datapoints = [datapoint for datapoint in batch_data["batched_datapoints"]]
         pre_batch_logits = hr_vec.mm(self.pre_batch_vectors.clone().t())
         pre_batch_logits *= self.pre_batch_weight * self.log_inv_t.exp()
 

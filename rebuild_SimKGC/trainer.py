@@ -28,7 +28,7 @@ class CustomTrainer:
         self.args.lr_scheduler = "linear"
         self.args.print_freq = 20
         self.args.eval_every_n_step = 10000
-        self.args.max_to_keep = 3
+        self.args.max_to_keep = 1
         # create model
         logger.info("=> creating model")
         self.model = build_model(self.args)
