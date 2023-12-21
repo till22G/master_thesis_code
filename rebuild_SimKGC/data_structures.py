@@ -149,7 +149,8 @@ class NeighborhoodGraph():
 
 def build_neighborhood_graph():
     global neigborhood_graph
-    neigborhood_graph = NeighborhoodGraph(args.train_path)
+    if neigborhood_graph == None:
+        neigborhood_graph = NeighborhoodGraph(args.train_path)
     return neigborhood_graph
     
     
@@ -453,7 +454,7 @@ def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True
 training_triples_class = None
 entity_dict = None
 
-def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) -> torch.tensor:
+""" def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) -> torch.tensor:
     
     global training_triples_class
     if training_triples_class is None:
@@ -490,7 +491,55 @@ def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) 
             if tail_ids_cols[j] in neighbors:
                 triplet_mask[i][j] = True
 
-    return triplet_mask
+    return triplet_mask """
+
+def get_entity_dict():
+    global entity_dict
+    if entity_dict is None:
+        file_path = os.path.join(script_dir, os.path.join("data", args.task, "entities.json"))
+        entity_dict = EntityDict(file_path)
+    return entity_dict
+
+def get_train_triplet_dict():
+    global training_triples_class
+    if training_triples_class is None:
+        file_path = os.path.join(script_dir, os.path.join("data", args.task, "train.txt.json"))
+        training_triples_class = TrainingTripels([file_path])
+    return training_triples_class
+
+def construct_triplet_mask(rows: List, cols: List = None) -> torch.tensor:
+    entity_dict = get_entity_dict()
+    training_triples_class = get_train_triplet_dict()
+    positive_on_diagonal = cols is None
+    num_row = len(rows)
+    cols = rows if cols is None else cols
+    num_col = len(cols)
+
+    # exact match
+    row_entity_ids = torch.LongTensor([entity_dict.entity_to_idx(ex.tail_id) for ex in rows])
+    col_entity_ids = row_entity_ids if positive_on_diagonal else \
+        torch.LongTensor([entity_dict.entity_to_idx(ex.tail_id) for ex in cols])
+    # num_row x num_col
+    triplet_mask = (row_entity_ids.unsqueeze(1) != col_entity_ids.unsqueeze(0))
+    if positive_on_diagonal:
+        triplet_mask.fill_diagonal_(True)
+
+    # mask out other possible neighbors
+    for i in range(num_row):
+        head_id, relation = rows[i].head_id, rows[i].relation
+        neighbor_ids = training_triples_class.get_neighbors(head_id, relation)
+        # exact match is enough, no further check needed
+        if len(neighbor_ids) <= 1:
+            continue
+
+        for j in range(num_col):
+            if i == j and positive_on_diagonal:
+                continue
+            tail_id = cols[j].tail_id
+            if tail_id in neighbor_ids:
+                triplet_mask[i][j] = False
+
+    return ~triplet_mask
 
 
 def construct_self_negative_mask(datapoints: List[DataPoint]) -> torch.tensor:
