@@ -17,6 +17,14 @@ from predict import BertPredictor
 from rerank import rerank_by_graph
 from logger import logger
 
+
+
+def _setup_entity_dict() -> EntityDict:
+    if args.task == 'wiki5m_ind':
+        return EntityDict(path=os.path.join(os.path.join("data", args.task, "entities.json")),
+                          inductive_test_path=args.valid_path)
+    return get_entity_dict()
+
 def get_entity_dict():
     entity_dict = EntityDict(os.path.join(os.path.join("data", args.task, "entities.json")))
     return entity_dict
@@ -26,7 +34,7 @@ def get_all_triplet_dict():
     all_triplet_dict = TrainingTripels(path_list)
     return all_triplet_dict
 
-entity_dict = get_entity_dict()
+entity_dict = _setup_entity_dict()
 all_triplet_dict = get_all_triplet_dict()
 neigborhood_graph = None
 

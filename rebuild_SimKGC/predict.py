@@ -95,6 +95,7 @@ class BertPredictor:
             examples.append(DataPoint(head_id='', head='', head_desc='', relation='',
                                     tail_id=entity_ex["entity_id"], tail=entity_ex["entity"], 
                                     tail_desc=entity_ex["entity_desc"]))
+        print(f"Number of examples: {len(examples)}")
         data_loader = torch.utils.data.DataLoader(
             Dataset(path='', data_points=examples),
             num_workers=2,

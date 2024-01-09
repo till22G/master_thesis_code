@@ -20,23 +20,32 @@ neigborhood_graph = None
 training_triples_class = None
 
 class EntityDict():
-    def __init__(self, path) -> None:
+    def __init__(self, path, inductive_test_path: str = None) -> None:
         self.entities = []
         self.id2entity = {}
         self.entity2idx = {}
         
-        self._load_entity_dict(path)
+        self._load_entity_dict(path, inductive_test_path)
     
-    def _load_entity_dict(self, path):
+    def _load_entity_dict(self, path, inductive_test_path: str = None):
         assert os.path.exists(path), "Path is invalid {}:".format(path)
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
-        
+    
         with open(path, "r", encoding="utf8") as infile:
             data = json.load(infile)
             
-        self.entities = data    
+        self.entities = data
+
+        if inductive_test_path:
+            examples = json.load(open(inductive_test_path, 'r', encoding='utf-8'))
+            valid_entity_ids = set()
+            for ex in examples:
+                valid_entity_ids.add(ex['head_id'])
+                valid_entity_ids.add(ex['tail_id'])
+            self.entities = [ex for ex in self.entities if ex["entity_id"] in valid_entity_ids]
+
         self.id2entity = {entity["entity_id"]: entity for entity in data}
-        self.entity2idx = {entity["entity_id"]: i for i, entity in enumerate(data)}
+        self.entity2idx = {entity["entity_id"]: i for i, entity in enumerate(self.entities)}
     
     def entity_to_idx(self, entity_id: str) -> int:
         return self.entity2idx[entity_id]
@@ -503,7 +512,7 @@ def get_entity_dict():
 def get_train_triplet_dict():
     global training_triples_class
     if training_triples_class is None:
-        file_path = os.path.join(script_dir, os.path.join("data", args.task, "train.txt.json"))
+        file_path = os.path.join(script_dir, os.path.join("data", args.task, "train.json"))
         training_triples_class = TrainingTripels([file_path])
     return training_triples_class
 
