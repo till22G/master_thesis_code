@@ -14,7 +14,6 @@ from argparser import args
 script_dir = os.path.dirname(__file__)
 
 tokenizer: AutoTokenizer = None
-
 entities = {}
 neigborhood_graph = None
 training_triples_class = None
@@ -73,8 +72,6 @@ class TrainingTripels():
         assert os.path.exists(path), "Path is invalid {path}"
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
-        #logger.info("Loading training triples from {}".format(path))
-        
         with open(path, "r", encoding="utf-8") as inflile:
             data = json.load(inflile)
                 
@@ -110,7 +107,6 @@ class TrainingTripels():
 class NeighborhoodGraph():
     def __init__(self, path) -> None:
         self.graph = {}
-        #logger.info("Building neighborhood graph from {}".format(path))
             
         global training_triples_class
         if training_triples_class is None:
@@ -123,10 +119,7 @@ class NeighborhoodGraph():
            
             if item["tail_id"] not in self.graph:
                 self.graph[item["tail_id"]] = set()
-            self.graph[item["tail_id"]].add(item["head_id"])
-        
-        #logger.info("Neighborhood graph succesfully build")
-            
+            self.graph[item["tail_id"]].add(item["head_id"])    
         
     def get_neighbors(self, entity_id: str, num_neigbhours: int = 10):
         neigbours = sorted(self.graph.get(entity_id, set()))
@@ -161,8 +154,6 @@ def build_neighborhood_graph():
     if neigborhood_graph == None:
         neigborhood_graph = NeighborhoodGraph(args.train_path)
     return neigborhood_graph
-    
-    
     
     
 def load_entities(path) -> None:
@@ -203,15 +194,12 @@ def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
     
     return tokens
 
-
 def create_tokenizer():
     global tokenizer
     if tokenizer == None:
         tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
-        #logger.info("Created tokenizer from {}".format(args.pretrained_model))
     return tokenizer
 
-    
 class DataPoint():
     def __init__(self, 
                  head_id: str = None, 
@@ -326,8 +314,6 @@ def add_neighbor_names(head_id, tail_id):
 
     global entities
     if not entities:
-        #print("---------------")
-        #print(os.path.join("data", args.task, "entities.json"))
         load_entities(os.path.join("data", args.task, "entities.json"))
 
     neighbor_names = [entities[entity_id].get("entity", "") for entity_id in neighbor_ids]
@@ -363,12 +349,6 @@ def load_data(path: str, add_forward_triplet: bool = True, add_backward_triplet:
         
         with open(path, "r", encoding="utf-8") as infile:
             data = json.load(infile)
-        
-        #logger.info("Load {} datapoints from {}".format(len(data), path))
-        
-            
-        """ if inverse_triples:
-            logger.info("Adding inverse triples") """
             
         datapoints = []
         for item in data:
@@ -390,8 +370,6 @@ def load_data(path: str, add_forward_triplet: bool = True, add_backward_triplet:
                                             item["head"],
                                             entities[item["head_id"]].get("entity_desc", "")
                                             ))
-                
-        #logger.info("Created dataset with {} datapoints".format(len(datapoints)))
             
         return datapoints
     
