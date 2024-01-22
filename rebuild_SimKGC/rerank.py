@@ -1,4 +1,5 @@
 import torch
+import os
 
 from typing import List
 
@@ -9,12 +10,23 @@ from data_structures import EntityDict, DataPoint, NeighborhoodGraph
 #from dict_hub import get_link_graph
 #from doc import Example
 neigborhood_graph = None
+entity_dict = None
+
+script_dir = os.path.dirname(__file__)
 
 def build_neighborhood_graph():
     global neigborhood_graph
     if not neigborhood_graph:
-        neigborhood_graph = NeighborhoodGraph(args.train_path)
+        entity_dict = build_entity_dict()
+        neigborhood_graph = NeighborhoodGraph(args.train_path, entity_dict=entity_dict)
     return neigborhood_graph
+
+def build_entity_dict():
+    global entity_dict
+    if entity_dict is None:
+        file_path = os.path.join(script_dir, os.path.join("data", args.task, "entities.json"))
+        entity_dict = EntityDict(file_path)
+    return entity_dict
 
 
 def rerank_by_graph(batch_score: torch.tensor,

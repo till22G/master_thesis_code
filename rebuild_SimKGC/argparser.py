@@ -28,7 +28,7 @@ parser.add_argument("--batch-size", default=256, type=int,
                     help="set the mini-batch size for training")
 parser.add_argument("--pre-batch", default=2, type=int,
                     help="number of pre-batches used to compute pre-batch negatives")
-parser.add_argument("--use-inverse-triples", action="store_true",
+parser.add_argument("--use-inverse-triples", action="store_false",
                     help="specify whether inverse triple should be loaded to the data or not")
 parser.add_argument("--use-self-negatives", action="store_true",
                     help="toggle whether self negatives are used for training or not")

@@ -1,13 +1,13 @@
 import os
 import json
 import torch
+import numpy as np
 
 from torch.utils.data import Dataset
 from typing import List, Optional
 from transformers import AutoTokenizer
 from collections import deque
 
-#from triplet_mask import construct_self_negative_mask, construct_triplet_mask
 from logger import logger
 from argparser import args
 
@@ -17,16 +17,17 @@ tokenizer: AutoTokenizer = None
 entities = {}
 neigborhood_graph = None
 training_triples_class = None
+entity_dict = None
 
 class EntityDict():
-    def __init__(self, path, inductive_test_path: str = None) -> None:
+    def __init__(self, path: str, inductive_test_path: str = None) -> None:
         self.entities = []
         self.id2entity = {}
         self.entity2idx = {}
         
         self._load_entity_dict(path, inductive_test_path)
     
-    def _load_entity_dict(self, path, inductive_test_path: str = None):
+    def _load_entity_dict(self, path: str, inductive_test_path: str = None):
         assert os.path.exists(path), "Path is invalid {}:".format(path)
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
     
@@ -36,12 +37,14 @@ class EntityDict():
         self.entities = data
 
         if inductive_test_path:
-            examples = json.load(open(inductive_test_path, 'r', encoding='utf-8'))
-            valid_entity_ids = set()
-            for ex in examples:
-                valid_entity_ids.add(ex['head_id'])
-                valid_entity_ids.add(ex['tail_id'])
-            self.entities = [ex for ex in self.entities if ex["entity_id"] in valid_entity_ids]
+            with open(inductive_test_path, "r", encoding="utf-8") as infile:
+                data = json.load(infile)
+
+            entity_ids = set()
+            for triple in data:
+                entity_ids.add(triple['head_id'])
+                entity_ids.add(triple['tail_id'])
+            self.entities = [entity for entity in self.entities if entity["entity_id"] in entity_ids]
 
         self.id2entity = {entity["entity_id"]: entity for entity in data}
         self.entity2idx = {entity["entity_id"]: i for i, entity in enumerate(self.entities)}
@@ -64,6 +67,7 @@ class TrainingTripels():
         self.training_triples = []
         self.hr2tails = {}
 
+         # load triples from all specified datasets
         for path in path_list:
             self._load_training_tripels(path)
         
@@ -73,38 +77,106 @@ class TrainingTripels():
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
         
         with open(path, "r", encoding="utf-8") as inflile:
-            data = json.load(inflile)
+            triples = json.load(inflile)
                 
-        for item in data:
-            self.training_triples.append(item)
-            #############################################################
-            if True:
-            #################################################################
-                inv_item = {"head_id": item["tail_id"],
-                            "head" : item["tail"],
-                            "relation": " ".join(("inverse", item["relation"])),
-                            "tail_id": item["head_id"],
-                            "tail" : item["head"]
-                }
-                self.training_triples.append(inv_item)
+        for triple in triples:
+            self.training_triples.append(triple)
+            if args.use_inverse_triples:
+                inverse_triple = {"head_id": triple["tail_id"],
+                                  "head" : triple["tail"],
+                                  "relation": " ".join(("inverse", triple["relation"])),
+                                  "tail_id": triple["head_id"],
+                                  "tail" : triple["head"]}
+                self.training_triples.append(inverse_triple)
                 
-        for item in self.training_triples:
-            key = (item["head_id"], item["relation"])
+        # create mapping from head-relation to tail
+        for triple in self.training_triples:
+            key = (triple["head_id"], triple["relation"])
             if key not in self.hr2tails:
                 self.hr2tails[key] = set()
-            self.hr2tails[key].add(item["tail_id"])
+            self.hr2tails[key].add(triple["tail_id"])
 
     def get_neighbors(self, head_id: str, relation: str) -> set:
         return self.hr2tails.get((head_id, relation), set())
     
-    def get_triplet(self, idx: int) -> dict:
+    """ def get_triplet(self, idx: int) -> dict:
         return self.training_triples[idx]
     
     def get_triplet_list(self) -> list: 
-        return self.training_triples
+        return self.training_triples """
         
 
-class NeighborhoodGraph():
+class NeighborhoodGraph:
+    def __init__(self, train_path, entity_dict, key_col=0, max_context_size=10, shuffle=False):
+        self.num_entities = len(entity_dict)
+        triples = json.load(open(train_path, 'r', encoding='utf-8'))
+        np_triples = np.empty((len(triples), 3), dtype=object)
+
+        for i, triple in enumerate(triples):
+            head_inx = entity_dict.entity_to_idx(triple["head_id"])
+            np_triples[i] = [head_inx, triple["relation"], triple["tail_id"]]
+        triples = np_triples
+
+        self.max_context_size = max_context_size
+        self.shuffle = shuffle
+        self.triples = np.copy(triples[triples[:, key_col].argsort()])
+        keys, values_offset = np.unique(
+            self.triples[:, key_col].astype(int), axis=0, return_index=True)
+        
+        values_offset = np.append(values_offset, len(self.triples))
+        self.keys = keys
+        self.values_offset = values_offset
+        self.key_to_start = np.full([self.num_entities,], -1)
+        self.key_to_start[keys] = self.values_offset[:-1]
+        self.key_to_end = np.full([self.num_entities,], -1)
+        self.key_to_end[keys] = self.values_offset[1:]
+
+    def __getitem__(self, item):
+        start = self.key_to_start[item]
+        end = self.key_to_end[item]
+        context = self.triples[start:end, [1, 2]]
+        if self.shuffle:
+            context = np.copy(context)
+            np.random.shuffle(context)
+        if end - start > self.max_context_size: 
+            context = context[:self.max_context_size]
+        return context
+
+    def get_neighbors(self, item):
+        if item == '':
+            return set()
+        entity_dict = build_entity_dict()
+        idx = entity_dict.entity_to_idx(item)
+        return self[idx]
+    
+    def get_n_hop_entity_indices(self, entity_id: str,
+                                 entity_dict: EntityDict,
+                                 n_hop: int = 2,
+                                 max_neighbors: int = 100000) -> set:
+        
+        if n_hop < 1:
+            return set()
+        
+        seen_eids = set()
+        seen_eids.add(entity_id)
+        queue = deque([entity_id])
+        for i in range(n_hop):
+            len_q = len(queue)
+            for _ in range(len_q):
+                n_id = queue.popleft()
+                neighbors = self.get_neighbors(n_id)
+                neighbor_ids = [neighbor[1] for neighbor in neighbors]
+                for neighbor_id in neighbor_ids:
+                    if neighbor_id not in seen_eids:
+                        queue.append(neighbor_id)
+                        seen_eids.add(neighbor_id)
+                        if len(seen_eids) > max_neighbors:
+                            return set()
+        return set([entity_dict.entity_to_idx(e_id) for e_id in seen_eids])
+
+
+
+""" class NeighborhoodGraph():
     def __init__(self, path) -> None:
         self.graph = {}
             
@@ -146,13 +218,22 @@ class NeighborhoodGraph():
                         seen_eids.add(node)
                         if len(seen_eids) > max_nodes:
                             return set()
-        return set([entity_dict.entity_to_idx(e_id) for e_id in seen_eids])
+        return set([entity_dict.entity_to_idx(e_id) for e_id in seen_eids]) """
+    
+
+def build_entity_dict():
+    global entity_dict
+    if entity_dict is None:
+        file_path = os.path.join(script_dir, os.path.join("data", args.task, "entities.json"))
+        entity_dict = EntityDict(file_path)
+    return entity_dict
     
 
 def build_neighborhood_graph():
     global neigborhood_graph
     if neigborhood_graph == None:
-        neigborhood_graph = NeighborhoodGraph(args.train_path)
+        entity_dict = build_entity_dict()
+        neigborhood_graph = NeighborhoodGraph(args.train_path, entity_dict=entity_dict)
     return neigborhood_graph
     
     
@@ -307,17 +388,23 @@ def add_neighbor_names(head_id, tail_id):
     global neigborhood_graph
     if neigborhood_graph is None:
         neigborhood_graph = build_neighborhood_graph()
-    neighbor_ids = neigborhood_graph.get_neighbors(head_id)
+    neighbors = neigborhood_graph.get_neighbors(head_id)
     
-    if tail_id in neighbor_ids:
-        neighbor_ids.remove(tail_id)
+    neighbor_string = ""
+    for neighbor in neighbors:
+        _ , n_tail_id = neighbor
+        if n_tail_id == tail_id or tail_id == head_id:
+            continue
+        n_tail_name = entity_dict.get_entity_by_id(n_tail_id)["entity"]
+        neighbor_string += f", {n_tail_id}"
+    return neighbor_string
 
-    global entities
+    """ global entities
     if not entities:
         load_entities(os.path.join("data", args.task, "entities.json"))
 
     neighbor_names = [entities[entity_id].get("entity", "") for entity_id in neighbor_ids]
-    return " ".join(neighbor_names)
+    return " ".join(neighbor_names) """
 
 
 class Dataset(torch.utils.data.dataset.Dataset):
@@ -378,8 +465,7 @@ def collate_fn(batch: List[dict]) -> dict:
     global tokenizer
     if tokenizer is None:
         tokenizer = create_tokenizer()
-        
-    
+
     hr_token_ids, hr_mask = batch_token_ids_and_mask(
         [torch.LongTensor(datapoint["hr_token_ids"]) for datapoint in batch],
         pad_token_id = tokenizer.pad_token_id)
@@ -436,10 +522,6 @@ def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True
         return batch, mask
     else:
         return batch   
-    
-
-training_triples_class = None
-entity_dict = None
 
 def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) -> torch.tensor:
     
@@ -477,55 +559,6 @@ def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) 
                 triplet_mask[i][j] = True
 
     return triplet_mask
-
-def get_entity_dict():
-    global entity_dict
-    if entity_dict is None:
-        file_path = os.path.join(script_dir, os.path.join("data", args.task, "entities.json"))
-        entity_dict = EntityDict(file_path)
-    return entity_dict
-
-def get_train_triplet_dict():
-    global training_triples_class
-    if training_triples_class is None:
-        file_path = os.path.join(script_dir, os.path.join("data", args.task, "train.json"))
-        training_triples_class = TrainingTripels([file_path])
-    return training_triples_class
-
-""" def construct_triplet_mask(rows: List, cols: List = None) -> torch.tensor:
-    entity_dict = get_entity_dict()
-    training_triples_class = get_train_triplet_dict()
-    positive_on_diagonal = cols is None
-    num_row = len(rows)
-    cols = rows if cols is None else cols
-    num_col = len(cols)
-
-    # exact match
-    row_entity_ids = torch.LongTensor([entity_dict.entity_to_idx(ex.tail_id) for ex in rows])
-    col_entity_ids = row_entity_ids if positive_on_diagonal else \
-        torch.LongTensor([entity_dict.entity_to_idx(ex.tail_id) for ex in cols])
-    # num_row x num_col
-    triplet_mask = (row_entity_ids.unsqueeze(1) != col_entity_ids.unsqueeze(0))
-    if positive_on_diagonal:
-        triplet_mask.fill_diagonal_(True)
-
-    # mask out other possible neighbors
-    for i in range(num_row):
-        head_id, relation = rows[i].head_id, rows[i].relation
-        neighbor_ids = training_triples_class.get_neighbors(head_id, relation)
-        # exact match is enough, no further check needed
-        if len(neighbor_ids) <= 1:
-            continue
-
-        for j in range(num_col):
-            if i == j and positive_on_diagonal:
-                continue
-            tail_id = cols[j].tail_id
-            if tail_id in neighbor_ids:
-                triplet_mask[i][j] = False
-
-    return triplet_mask
- """
 
 def construct_self_negative_mask(datapoints: List[DataPoint]) -> torch.tensor:
     self_mask = torch.zeros(len(datapoints))
