@@ -12,7 +12,6 @@ from logger import logger
 from argparser import args
 
 script_dir = os.path.dirname(__file__)
-
 tokenizer: AutoTokenizer = None
 entities = {}
 neigborhood_graph = None
@@ -98,13 +97,7 @@ class TrainingTripels():
 
     def get_neighbors(self, head_id: str, relation: str) -> set:
         return self.hr2tails.get((head_id, relation), set())
-    
-    """ def get_triplet(self, idx: int) -> dict:
-        return self.training_triples[idx]
-    
-    def get_triplet_list(self) -> list: 
-        return self.training_triples """
-        
+            
 
 class NeighborhoodGraph:
     def __init__(self, train_path, entity_dict, key_col=0, max_context_size=10, shuffle=False):
@@ -174,53 +167,7 @@ class NeighborhoodGraph:
                             return set()
         return set([entity_dict.entity_to_idx(e_id) for e_id in seen_eids])
 
-
-
-""" class NeighborhoodGraph():
-    def __init__(self, path) -> None:
-        self.graph = {}
-            
-        global training_triples_class
-        if training_triples_class is None:
-            training_triples_class = TrainingTripels([path])
-            
-        for item in training_triples_class.get_triplet_list():
-            if item["head_id"] not in self.graph:
-                self.graph[item["head_id"]] = set()
-            self.graph[item["head_id"]].add(item["tail_id"])
-           
-            if item["tail_id"] not in self.graph:
-                self.graph[item["tail_id"]] = set()
-            self.graph[item["tail_id"]].add(item["head_id"])    
-        
-    def get_neighbors(self, entity_id: str, num_neigbhours: int = 10):
-        neigbours = sorted(self.graph.get(entity_id, set()))
-        return neigbours[:num_neigbhours]
     
-    def get_n_hop_entity_indices(self, entity_id: str,
-                                 entity_dict: EntityDict,
-                                 n_hop: int = 2,
-                                 # return empty if exceeds this number
-                                 max_nodes: int = 100000) -> set:
-        if n_hop < 0:
-            return set()
-
-        seen_eids = set()
-        seen_eids.add(entity_id)
-        queue = deque([entity_id])
-        for i in range(n_hop):
-            len_q = len(queue)
-            for _ in range(len_q):
-                tp = queue.popleft()
-                for node in self.graph.get(tp, set()):
-                    if node not in seen_eids:
-                        queue.append(node)
-                        seen_eids.add(node)
-                        if len(seen_eids) > max_nodes:
-                            return set()
-        return set([entity_dict.entity_to_idx(e_id) for e_id in seen_eids]) """
-    
-
 def build_entity_dict():
     global entity_dict
     if entity_dict is None:
@@ -241,10 +188,9 @@ def load_entities(path) -> None:
     
     assert os.path.exists(path), "Path is invalid: {}".format(path)
     assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
-
-    logger.info("Loading entity descriptions from {}".format(path))
     
     with open (path, "r", encoding="utf-8") as infile:
+        logger.info("Loading entity descriptions from {}".format(path))
         data = json.load(infile)
             
     for item in data:
@@ -260,6 +206,11 @@ def _concat_name_desciption(entity_head: str, entity_desc: str):
         entity_desc = entity_desc[len(entity_head):].strip()
     return "{}: {}".format(entity_head, entity_desc)
 
+def create_tokenizer():
+    global tokenizer
+    if tokenizer == None:
+        tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
+    return tokenizer
 
 def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
     global tokenizer
@@ -274,12 +225,6 @@ def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
                        return_token_type_ids = True)
     
     return tokens
-
-def create_tokenizer():
-    global tokenizer
-    if tokenizer == None:
-        tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
-    return tokenizer
 
 class DataPoint():
     def __init__(self, 
@@ -466,44 +411,34 @@ def collate_fn(batch: List[dict]) -> dict:
     if tokenizer is None:
         tokenizer = create_tokenizer()
 
-    hr_token_ids, hr_mask = batch_token_ids_and_mask(
-        [torch.LongTensor(datapoint["hr_token_ids"]) for datapoint in batch],
-        pad_token_id = tokenizer.pad_token_id)
-    
-    tail_token_ids, tail_mask = batch_token_ids_and_mask(
-        [torch.LongTensor(datapoint["tail_token_ids"]) for datapoint in batch],
-        pad_token_id = tokenizer.pad_token_id)
-    
-    head_token_ids, head_mask = batch_token_ids_and_mask(
-        [torch.LongTensor(datapoint["head_token_ids"]) for datapoint in batch],
-        pad_token_id = tokenizer.pad_token_id)
-    
-    hr_token_type_ids = batch_token_ids_and_mask (
-        [torch.LongTensor(datapoint["hr_token_type_ids"]) for datapoint in batch],
-        pad_token_id = tokenizer.pad_token_id, create_mask = False)
-    
-    tail_token_type_ids = batch_token_ids_and_mask (
-        [torch.LongTensor(datapoint["tail_token_type_ids"]) for datapoint in batch],
-        pad_token_id = tokenizer.pad_token_id, create_mask = False)
-    
-    head_token_type_ids = batch_token_ids_and_mask (
-        [torch.LongTensor(datapoint["head_token_type_ids"]) for datapoint in batch],
-        pad_token_id = tokenizer.pad_token_id, create_mask = False)
-    
-    batch_datapoints = [datapoint["obj"] for datapoint in batch]
+    hr_token_ids   = [torch.LongTensor(datapoint["hr_token_ids"]) for datapoint in batch]
+    hr_token_type_ids  = [torch.LongTensor(datapoint["hr_token_type_ids"]) for datapoint in batch]
+    tail_token_ids = [torch.LongTensor(datapoint["tail_token_ids"]) for datapoint in batch]
+    tail_token_type_ids = [torch.LongTensor(datapoint["tail_token_type_ids"]) for datapoint in batch]
+    head_token_ids = [torch.LongTensor(datapoint["head_token_ids"]) for datapoint in batch]
+    head_token_type_ids = [torch.LongTensor(datapoint["head_token_type_ids"]) for datapoint in batch]
 
-    return {"batched_hr_token_ids" : hr_token_ids,
-            "batched_hr_mask" : hr_mask,
-            "batched_hr_token_type_ids" : hr_token_type_ids,
-            "batched_tail_token_ids" : tail_token_ids,
-            "batched_tail_mask" : tail_mask,
-            "batched_tail_token_type_ids" : tail_token_type_ids,
-            "batched_head_token_ids" : head_token_ids,
-            "batched_head_mask" : head_mask,
-            "batched_head_token_type_ids" : head_token_type_ids,
-            "batched_datapoints": batch_datapoints,
-            "triplet_mask" : construct_triplet_mask(rows=batch_datapoints) if not args.is_test else None,
-            "self_neg_mask" : construct_self_negative_mask(batch_datapoints) if not args.is_test else None,}
+    batched_hr_token_ids, batched_hr_mask = batch_token_ids_and_mask(hr_token_ids, pad_token_id = tokenizer.pad_token_id)
+    batched_hr_token_type_ids = batch_token_ids_and_mask (hr_token_type_ids, pad_token_id = tokenizer.pad_token_id, create_mask = False)
+    batched_tail_token_ids, batched_tail_mask = batch_token_ids_and_mask(tail_token_ids, pad_token_id = tokenizer.pad_token_id)
+    batched_tail_token_type_ids = batch_token_ids_and_mask (tail_token_type_ids, pad_token_id = tokenizer.pad_token_id, create_mask = False)
+    batched_head_token_ids, batched_head_mask = batch_token_ids_and_mask(head_token_ids, pad_token_id = tokenizer.pad_token_id)
+    batched_head_token_type_ids = batch_token_ids_and_mask (head_token_type_ids, pad_token_id = tokenizer.pad_token_id, create_mask = False)
+
+    batched_datapoints = [datapoint["obj"] for datapoint in batch]
+
+    return {"batched_hr_token_ids" : batched_hr_token_ids,
+            "batched_hr_mask" : batched_hr_mask,
+            "batched_hr_token_type_ids" : batched_hr_token_type_ids,
+            "batched_tail_token_ids" : batched_tail_token_ids,
+            "batched_tail_mask" : batched_tail_mask,
+            "batched_tail_token_type_ids" : batched_tail_token_type_ids,
+            "batched_head_token_ids" : batched_head_token_ids,
+            "batched_head_mask" : batched_head_mask,
+            "batched_head_token_type_ids" : batched_head_token_type_ids,
+            "batched_datapoints": batched_datapoints,
+            "triplet_mask" : construct_triplet_mask(rows=batched_datapoints) if not args.is_test else None,
+            "self_neg_mask" : construct_self_negative_mask(batched_datapoints) if not args.is_test else None,}
 
 
 def batch_token_ids_and_mask(data_batch_tensor, pad_token_id=0, create_mask=True):
