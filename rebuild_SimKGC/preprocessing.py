@@ -165,8 +165,6 @@ def _rel_to_surface_form(relation: str) -> str:
 
     return relation
 
-# !! check whether I am allowed to use this funciton or not!!!
-
 
 def _normalize_relations(triples: list, save_relations: bool=True, data_dir: str=None) -> dict:
     rel_id_to_surface_form = {}
@@ -463,7 +461,7 @@ def main():
     
     datasets = ["train", "valid", "test"]
     
-    dataset_path = os.path.join("..", "data", args.task)
+    dataset_path = os.path.join("data", args.task)
     
     # list containing a dictionary of each triple in the data. The dictionary containes
     # the head_id, the head_name, the normalized relation, the tail_id and the tail name
@@ -523,7 +521,12 @@ def main():
 
         _save_entities_to_json(all_triples, wiki5m_entity_names, wiki5m_entity_descriptions, dataset_path)
     
-
+    else:
+        logger.info("No valid dataset name detected")
+        logger.info("Please enter a valid dataset name: wiki5m_trans, wiki5m_ind, WN18RR or FB15k237")
+        logger.info("Terminating without preprocessing")
+        return 0
+    
     logger.info("Finished pre-processing with {} errors".format(error_count))
 
 

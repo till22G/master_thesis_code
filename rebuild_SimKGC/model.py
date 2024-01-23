@@ -73,18 +73,10 @@ class CustomModel(nn.Module):
                       batched_tail_token_ids, batched_tail_mask, batched_tail_token_type_ids,
                       batched_head_token_ids, batched_head_mask, batched_head_token_type_ids,
                       encode_tail_only = False, encode_hr_only = False,
-                      only_ent_embedding = False, **kwargs):
-        
-        """ if only_ent_embedding:
-            ent_vec = self._encode(self.bert_t,
-                                tail_token_ids,
-                                tail_mask,
-                                tail_token_type_ids)
-            return {"ent_vectors": ent_vec} """
-       
+                      only_ent_embedding = False, **kwargs):        
+
         if only_ent_embedding:
             encode_tail_only = True
-
 
         if not encode_hr_only:
             t_vec = self._encode(self.bert_t,
@@ -114,6 +106,7 @@ class CustomModel(nn.Module):
         return {"hr_vector" : hr_vec,
                 "tail_vector" : t_vec,
                 "head_vector" : h_vec}
+    
     
     def compute_logits(self, output_dict: dict, batch_dict: dict) -> dict:
         encodings = output_dict
@@ -154,13 +147,15 @@ class CustomModel(nn.Module):
 
     def _compute_pre_batch_logits(self, hr_vec, t_vec, batch_data):
         batched_datapoints = [datapoint for datapoint in batch_data["batched_datapoints"]]
-        pre_batch_logits = hr_vec.mm(self.pre_batch_vectors.clone().t())
-        pre_batch_logits *= self.pre_batch_weight * self.log_inv_t.exp()
+        pre_batch_logits = hr_vec.mm(self.pre_batch_vectors.clone().t()) # calculate logits with pre-batch vectors and current encodings
+        pre_batch_logits *= self.pre_batch_weight * self.log_inv_t.exp() # apply pre-batch weight and scale with temperature
 
+        # mask pre-batch logits
         if self.pre_batch_datapoints[-1] is not None:
             pre_batch_triplet_mask = construct_triplet_mask(batched_datapoints, self.pre_batch_datapoints).to(hr_vec.device)
             pre_batch_logits.masked_fill_(pre_batch_triplet_mask, -1e4)
-        
+
+        # update pre-batched datapoints with new w
         self.pre_batch_vectors[self.offset:(self.offset + self.batch_size)] = t_vec.data.clone()
         self.pre_batch_datapoints[self.offset:(self.offset + self.batch_size)] = batched_datapoints
         self.offset = (self.offset + self.batch_size) % len(self.pre_batch_datapoints)

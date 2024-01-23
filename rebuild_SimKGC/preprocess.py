@@ -7,7 +7,7 @@ from multiprocessing import Pool
 from typing import List
 
 parser = argparse.ArgumentParser(description='preprocess')
-parser.add_argument('--task', default='wn18rr', type=str, metavar='N',
+parser.add_argument('--task', default='WN18RR', type=str, metavar='N',
                     help='dataset name')
 parser.add_argument('--workers', default=2, type=int, metavar='N',
                     help='number of workers')
