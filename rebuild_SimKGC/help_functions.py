@@ -46,23 +46,20 @@ def calculate_running_mean(runnig_mean, new_datapoint, iteration: int):
 
 def save_checkpoints(args, save_dict, epoch, is_best=False):
         
-        
-        if not os.path.isdir(os.path.join("..", "model_checkpoints")):
-            os.mkdir(os.path.join("..", "model_checkpoints"))
-        if not os.path.isdir(os.path.join("..", "model_checkpoints", args.task)):
-            os.mkdir(os.path.join("..", "model_checkpoints", args.task))
-          
+        abs_path = os.path.abspath(args.model_dir)
+        os.makedirs(abs_path, exist_ok=True)
+
+        # save best model
         if is_best:
-            save_state_path = os.path.join("..", "model_checkpoints", args.task,
-                                          "best_model_checkpoint.mdl".format(epoch))
-            torch.save(save_dict, save_state_path)
-            
-        save_state_path = os.path.join("..", "model_checkpoints", args.task,
-                                       "model_checkpoint_{}.mdl".format(epoch))
-                     
-        torch.save(save_dict, save_state_path)
-        
-        old_model_path = os.path.join('..', "model_checkpoints", args.task, 
-                                       "model_checkpoint_{}.mdl".format(epoch - 1))
-        if os.path.exists(old_model_path):
-            os.remove(old_model_path)
+            filename_best = "best_model_checkpoint.mdl"
+            torch.save(save_dict, os.path.join(abs_path, filename_best))
+
+        # save checkpoint
+        filename = "model_checkpoint_{}.mdl".format(epoch)
+        torch.save(save_dict, os.path.join(abs_path, filename))
+
+        # delete old checkpoint
+        checkpoint_name = "model_checkpoint_{}.mdl".format(epoch - 1)
+        checkpoint_path = os.path.join(abs_path, checkpoint_name)
+        if os.path.exists(os.path.join(checkpoint_path)):
+            os.remove(checkpoint_path)

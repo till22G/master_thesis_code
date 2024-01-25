@@ -130,7 +130,7 @@ class CustomTrainer:
             if (i + 1) % 5000 == 0:
                 count += 100
                 # save model checkpoint
-                save_dict = {"model_state_dict" : self.model.state_dict(),
+                save_dict = {"state_dict" : self.model.state_dict(),
                             "args" : self.args.__dict__,
                             "epoch" : epoch}
                 save_checkpoints(self.args, save_dict, count + epoch)
@@ -172,7 +172,7 @@ class CustomTrainer:
         
         
         # save model checkpoint
-        save_dict = {"model_state_dict" : self.model.state_dict(),
+        save_dict = {"state_dict" : self.model.state_dict(),
                      "args" : self.args.__dict__,
                      "epoch" : epoch}
         

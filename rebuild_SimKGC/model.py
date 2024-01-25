@@ -108,9 +108,9 @@ class CustomModel(nn.Module):
                 "head_vector" : h_vec}
     
     
-    def compute_logits(self, output_dict: dict, batch_dict: dict) -> dict:
-        encodings = output_dict
-        batch_data = batch_dict
+    def compute_logits(self, encodings: dict, batch_data: dict) -> dict:
+        #encodings = output_dict
+        #batch_data = batch_dict
         hr_vec, t_vec = encodings["hr_vector"], encodings["tail_vector"]
         labels = torch.arange(hr_vec.size(0)).to(hr_vec.device)
 

@@ -7,7 +7,7 @@ from transformers import AutoModel, AutoTokenizer
 
 from argparser import args
 from logger import logger
-from trainer import CustomTrainer
+from my_trainer import CustomTrainer
 
 def main():
     logger.info("Entered Main")
