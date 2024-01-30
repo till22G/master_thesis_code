@@ -13,11 +13,12 @@ from transformers import AdamW
 from data_structures import Dataset, collate_fn
 from utils import AverageMeter, ProgressMeter
 from utils import save_checkpoint, delete_old_ckt, report_num_trainable_parameters, move_to_cuda, get_model_obj
-from metric import accuracy
+from metric import accuracy, calculate_accuracy
 #from models import build_model, ModelOutput
 from model import build_model, ModelOutput
 #from dict_hub import build_tokenizer
 from logger import logger
+from help_functions import calculate_running_mean
 
 
 class CustomTrainer:
@@ -64,7 +65,7 @@ class CustomTrainer:
         if valid_dataset:
             self.valid_loader = torch.utils.data.DataLoader(
                 valid_dataset,
-                batch_size=args.batch_size * 2,
+                batch_size=args.batch_size ,
                 shuffle=True,
                 collate_fn=collate_fn,
                 num_workers=args.num_workers,
@@ -101,8 +102,12 @@ class CustomTrainer:
     def eval_epoch(self, epoch) -> Dict:
         if not self.valid_loader:
             return {}
-
+        
+        running_loss = 0.0
+        runnig_mean_acc = []
         losses = AverageMeter('Loss', ':.4')
+        my_top1 = AverageMeter('Acc@1', ':6.2f')
+        my_top3 = AverageMeter('Acc@3', ':6.2f')
         top1 = AverageMeter('Acc@1', ':6.2f')
         top3 = AverageMeter('Acc@3', ':6.2f')
 
@@ -120,24 +125,35 @@ class CustomTrainer:
             loss = self.criterion(logits, labels)
             losses.update(loss.item(), batch_size)
 
+            running_loss = calculate_running_mean(running_loss, loss, i+1)
+
             acc1, acc3 = accuracy(logits, labels, topk=(1, 3))
             top1.update(acc1.item(), batch_size)
             top3.update(acc3.item(), batch_size)
 
+            my_acc1, my_acc2 = calculate_accuracy(logits, labels, topk=(1,3))
+            my_top1.update(my_acc1.item(), batch_size)
+            my_top3.update(my_acc2.item(), batch_size)
+            runnig_mean_acc = calculate_running_mean(runnig_mean_acc, iteration=i+1, new_datapoint=[my_acc1, my_acc2])
+
         metric_dict = {'Acc@1': round(top1.avg, 3),
                        'Acc@3': round(top3.avg, 3),
                        'loss': round(losses.avg, 3)}
-        logger.info('Epoch {}, valid metric: {}'.format(epoch, json.dumps(metric_dict)))
+        logger.info('Epoch {}, valid metric: {} ... my metric: acc1: {} acc3 {} loss {}'.format(epoch, json.dumps(metric_dict), runnig_mean_acc[0], runnig_mean_acc[1], running_loss))
         return metric_dict
 
     def train_epoch(self, epoch):
         losses = AverageMeter('Loss', ':.4')
-        top1 = AverageMeter('Acc@1', ':6.2f')
-        top3 = AverageMeter('Acc@3', ':6.2f')
+        my_top1 = AverageMeter('Acc@1', ':6.2f')
+        my_top3 = AverageMeter('Acc@3', ':6.2f')
+        top1 = AverageMeter('My_Acc@1', ':6.2f')
+        top3 = AverageMeter('My_Acc@3', ':6.2f')
         inv_t = AverageMeter('InvT', ':6.2f')
+        my_losses = AverageMeter('My_Loss', ':.4')
+        running_mean_loss = 0.0
         progress = ProgressMeter(
             len(self.train_loader),
-            [losses, inv_t, top1, top3],
+            [losses, my_losses,  inv_t, top1, top3, my_top1, my_top3],
             prefix="Epoch: [{}]".format(epoch))
 
         for i, batch_dict in enumerate(self.train_loader):
@@ -166,7 +182,13 @@ class CustomTrainer:
             acc1, acc3 = accuracy(logits, labels, topk=(1, 3))
             top1.update(acc1.item(), batch_size)
             top3.update(acc3.item(), batch_size)
-
+            my_acc1, my_acc2 = calculate_accuracy(logits, labels, topk=(1,3))
+            my_top1.update(my_acc1.item(), batch_size)
+            my_top3.update(my_acc2.item(), batch_size)
+            
+            running_mean_loss = calculate_running_mean(running_mean_loss, loss, i+1)
+            my_losses.update(running_mean_loss, batch_size)
+            
             inv_t.update(outputs.inv_t, 1)
             losses.update(loss.item(), batch_size)
 

@@ -18,3 +18,17 @@ def accuracy(output: torch.tensor, target: torch.tensor, topk=(1,)) -> List[torc
             correct_k = correct[:k].contiguous().view(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
+
+
+def calculate_accuracy(logits: torch.tensor, labels: torch.tensor, topk=(1,)) -> List[torch.tensor]:
+    with torch.no_grad():
+        max_k = max(topk)
+        _ , idx_topk_pred = logits.topk(max_k, dim=1)
+        labels = labels.unsqueeze(dim=1).expand(idx_topk_pred.shape)
+        correct_classified = (labels == idx_topk_pred)
+        accuracies = []
+        for k in topk:
+            acc = (correct_classified[:, :k].sum() / len(labels)) * 100
+            accuracies.append(acc)
+            
+    return accuracies
