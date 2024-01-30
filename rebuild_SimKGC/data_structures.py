@@ -103,11 +103,15 @@ class NeighborhoodGraph:
     def __init__(self, train_path, entity_dict, key_col=0, max_context_size=10, shuffle=False):
         self.num_entities = len(entity_dict)
         triples = json.load(open(train_path, 'r', encoding='utf-8'))
-        np_triples = np.empty((len(triples), 3), dtype=object)
+        num_triples = len(triples)
+        np_triples = np.empty((num_triples * 2, 3), dtype=object)
 
         for i, triple in enumerate(triples):
-            head_inx = entity_dict.entity_to_idx(triple["head_id"])
-            np_triples[i] = [head_inx, triple["relation"], triple["tail_id"]]
+            head_idx = entity_dict.entity_to_idx(triple["head_id"])
+            np_triples[i] = [head_idx, triple["relation"], triple["tail_id"]]
+            # add reverse triples
+            tail_idx = entity_dict.entity_to_idx(triple["tail_id"])
+            np_triples[num_triples + i] = [tail_idx, "inverse " + triple["relation"], triple["head_id"]]
         triples = np_triples
 
         self.max_context_size = max_context_size
