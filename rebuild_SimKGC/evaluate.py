@@ -1,55 +1,37 @@
+import torch
 import os
 import json
-import tqdm
-import torch
-import glob
+import torch.utils.data.dataset
 
-from time import time
-from typing import List, Tuple
-from dataclasses import dataclass, asdict
+from tqdm import tqdm
+from typing import Optional, List
 
+from data_structures import TrainingTripels, EntityDict, Dataset, DataPoint, collate_fn, load_data
 from argparser import args
-#from doc import load_data, Example
-from data_structures import load_data, DataPoint, EntityDict, TrainingTripels, Dataset, collate_fn
-from predict import BertPredictor
-#from dict_hub import get_entity_dict, get_all_triplet_dict
-#from triplet import EntityDict
-from rerank import rerank_by_graph
 from logger import logger
 from help_functions import move_to_cuda
+from model import build_model
 from evaluation_model import EvaluationModel
 
 
 
-def _setup_entity_dict() -> EntityDict:
-    if args.task == 'wiki5m_ind':
-        return EntityDict(path=os.path.join(os.path.join("data", args.task, "entities.json")),
-                          inductive_test_path=args.valid_path)
-    return get_entity_dict()
+def load_all_triples():
+    global all_triples
+    if all_triples is None:
+        file_path_list = [os.path.join(script_dir, os.path.join("data", args.task, "train.json")), \
+                          os.path.join(script_dir, os.path.join("data", args.task, "valid.json")), \
+                          os.path.join(script_dir, os.path.join("data", args.task, "test.json")) ]
+        all_triples = TrainingTripels(file_path_list)
+    return all_triples
 
-def get_entity_dict():
-    entity_dict = EntityDict(os.path.join(os.path.join("data", args.task, "entities.json")))
+def build_entity_dict():
+    global entity_dict
+    if entity_dict is None:
+        file_path = os.path.join(script_dir, os.path.join("data", args.task, "entities.json"))
+        entity_dict = EntityDict(file_path)
     return entity_dict
 
-def get_all_triplet_dict():
-    path_list = [os.path.join("data", args.task, set + ".json") for set in ["train", "valid", "test"]]
-    all_triplet_dict = TrainingTripels(path_list)
-    return all_triplet_dict
 
-entity_dict = _setup_entity_dict()
-all_triplet_dict = get_all_triplet_dict()
-neigborhood_graph = None
-
-@dataclass
-class PredInfo:
-    head: str
-    relation: str
-    tail: str
-    pred_tail: str
-    pred_score: float
-    topk_score_info: str
-    rank: int
-    correct: bool
 
 
 def get_hr_embeddings(eval_model, test_data):
@@ -75,6 +57,12 @@ def get_hr_embeddings(eval_model, test_data):
 
     return torch.cat(embedded_hr_list, dim=0)
 
+script_dir = os.path.dirname(__file__)
+
+all_triples = None
+entity_dict = None
+
+
 def get_entity_embeddings(entity_dict, eval_model):
     entity_datapoints = []
     for entity in entity_dict.entities:
@@ -96,7 +84,7 @@ def get_entity_embeddings(entity_dict, eval_model):
         )
     
     embedded_entities_list = []
-    for _ , batch_dict in enumerate(tqdm.tqdm(entity_data_loader)):
+    for _ , batch_dict in enumerate(tqdm(entity_data_loader)):
         #if torch.cuda.is_available():
         #    batch_dict = move_to_cuda(batch_dict)
         batch_dict["only_ent_embedding"] = True
@@ -108,6 +96,7 @@ def get_entity_embeddings(entity_dict, eval_model):
 
 def get_labels_as_idx(triples):
     labels = []
+    entity_dict = build_entity_dict()
     for triple in triples:
         entity_id = triple.get_tail_id()
         entity_idx = entity_dict.entity_to_idx(entity_id)
@@ -121,7 +110,7 @@ def mask_knows_triples(batch_triples, batch_scores):
     for i in range(len(batch_triples)):
         triple = batch_triples[i]
         
-        all_triples = all_triplet_dict
+        all_triples = load_all_triples()
         neighbors = all_triples.get_neighbors(triple.get_head_id(), triple.get_relation())
         tail_id = triple.get_tail_id() 
         mask_idx = [entity_dict.entity_to_idx(entity_id) for entity_id in neighbors if entity_id != tail_id]
@@ -138,33 +127,35 @@ def get_hit_at_k(ranks, k=1):
             hits += 1
     return hits / len(ranks)
 
-
-@torch.no_grad()
-def compute_metrics(hr_tensor: torch.tensor,
-                    entities_tensor: torch.tensor,
-                    target: List[int],
-                    examples: List[DataPoint],
-                    k=3, batch_size=256) -> Tuple:
-
-    """ target = torch.LongTensor(target).unsqueeze(-1).to(hr_tensor.device)
-    topk_scores, topk_indices = [], []
-    ranks = []
+def eval(model, 
+         candidates, 
+         forward_triples=True):
+    
+    print(args.valid_path)
+    test_data = load_data(path=args.valid_path, 
+                          add_forward_triplet=forward_triples, 
+                          add_backward_triplet=not forward_triples)
+    
+    hr_embeddings = get_hr_embeddings(model, test_data=test_data)
+    labels = get_labels_as_idx(test_data)
+    labels = torch.LongTensor(labels).unsqueeze(-1)
+    
     mean_rank, mrr, hit1, hit3, hit10 = 0, 0, 0, 0, 0
     all_ranks = []
     topk_scores, topk_indices = [], []
     k = 3
-    total = hr_tensor.size(0)
-    for i in tqdm.tqdm(range(0, hr_tensor.size(0), args.batch_size)):
+    total = hr_embeddings.size(0)
+    for i in tqdm(range(0, hr_embeddings.size(0), args.batch_size)):
         step = i + args.batch_size
 
         # calculate cosine-similarity between hr_embeddings and targets 
-        batch_scores = torch.mm(hr_tensor[i:step,: ], entities_tensor.t())
-        batch_labels = target[i:step].to(batch_scores.device)
+        batch_scores = torch.mm(hr_embeddings[i:step,: ], candidates.t())
+        batch_labels = labels[i:step].to(batch_scores.device)
 
-        masked_batch_scores = mask_knows_triples(batch_triples=examples[i:step], batch_scores=batch_scores)
+        masked_batch_scores = mask_knows_triples(batch_triples=test_data[i:step], batch_scores=batch_scores)
         
         # sort mask results
-        sorted_scores , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
+        _ , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
         correct_entities = torch.eq(sorted_idx, batch_labels)
         ranks = torch.nonzero(correct_entities, as_tuple=False)[:,1]
 
@@ -176,105 +167,36 @@ def compute_metrics(hr_tensor: torch.tensor,
     mean_rank = sum(all_ranks) / len(all_ranks) + 1
     mrr = sum([1/(item +1) for item in all_ranks]) / len(all_ranks)
 
-    topk_scores.extend(sorted_scores[:, :k].tolist())
-    topk_indices.extend(sorted_idx[:, :k].tolist())
-
-    metrics = {'mean_rank': round(mean_rank, 4), 'mrr': round(mrr, 4), 'hit@1': round(hit1, 4), 'hit@3': round(hit3, 4), 'hit@10': round(hit10, 4)} """
-
-
-    ## top k-scroes is reported wrongly
-    return topk_scores, topk_indices, metrics, ranks
+    print(hit1)
+    print(hit3)
+    print(hit10)
+    print(mean_rank)
+    print(mrr)
 
 
-def predict_by_split():
-    assert os.path.exists(args.valid_path)
-    assert os.path.exists(args.train_path)
 
-    #predictor = BertPredictor()
-    #predictor.load(ckt_path=args.eval_model_path)
-    predictor = EvaluationModel()
-    predictor.load_checkpoint(args.eval_model_path)
-    entity_tensor = get_entity_embeddings(entity_dict=entity_dict, eval_model=predictor)
+def main():
+    train_path = args.train_path
+    test_path = args.valid_path
+
+    assert os.path.exists(train_path)
+    assert os.path.exists(test_path)
+
+    # build model and load checkpoint
+    eval_model = EvaluationModel()
+    eval_model.load_checkpoint(checkpoint_path=args.eval_model_path)
     
-    #entity_tensor = predictor.predict_by_entities(entity_dict.entities)
+    entity_dict = build_entity_dict()
+    entity_embeddings = get_entity_embeddings(entity_dict=entity_dict, eval_model=eval_model)
 
-    forward_metrics = eval_single_direction(predictor,
-                                            entity_tensor=entity_tensor,
-                                            eval_forward=True)
-    backward_metrics = eval_single_direction(predictor,
-                                             entity_tensor=entity_tensor,
-                                             eval_forward=False)
-    metrics = {k: round((forward_metrics[k] + backward_metrics[k]) / 2, 4) for k in forward_metrics}
-    logger.info('Averaged metrics: {}'.format(metrics))
-
-    prefix, basename = os.path.dirname(args.eval_model_path), os.path.basename(args.eval_model_path)
-    split = os.path.basename(args.valid_path)
-    with open('{}/metrics_{}_{}.json'.format(prefix, split, basename), 'w', encoding='utf-8') as writer:
-        writer.write('forward metrics: {}\n'.format(json.dumps(forward_metrics)))
-        writer.write('backward metrics: {}\n'.format(json.dumps(backward_metrics)))
-        writer.write('average metrics: {}\n'.format(json.dumps(metrics)))
-
-
-def eval_single_direction(predictor: BertPredictor,
-                          entity_tensor: torch.tensor,
-                          eval_forward=True,
-                          batch_size=256) -> dict:
-    start_time = time()
-    examples = load_data(args.valid_path, add_forward_triplet=eval_forward, add_backward_triplet=not eval_forward)
-
-
-    hr_tensor = get_hr_embeddings(predictor, examples)
-
-    #hr_tensor, _ = predictor.predict_by_examples(examples)
-    hr_tensor = hr_tensor.to(entity_tensor.device)
-    #target = [entity_dict.entity_to_idx(ex.tail_id) for ex in examples]
-    target = get_labels_as_idx(triples=examples)
-    logger.info('predict tensor done, compute metrics...')
-
-    """ topk_scores, topk_indices, metrics, ranks = compute_metrics(hr_tensor=hr_tensor, entities_tensor=entity_tensor,
-                                                                target=target, examples=examples,
-                                                                batch_size=batch_size) """
+    results_forward = eval(model=eval_model,
+                           candidates=entity_embeddings,
+                           forward_triples=True)
+    results_backward = eval(model=eval_model, 
+                            candidates=entity_embeddings,
+                            forward_triples=False)
     
-    target = torch.LongTensor(target).unsqueeze(-1).to(hr_tensor.device)
-    topk_scores, topk_indices = [], []
-    ranks = []
-    mean_rank, mrr, hit1, hit3, hit10 = 0, 0, 0, 0, 0
-    all_ranks = []
-    topk_scores, topk_indices = [], []
-    k = 3
-    total = hr_tensor.size(0)
-    for i in tqdm.tqdm(range(0, hr_tensor.size(0), args.batch_size)):
-        step = i + args.batch_size
 
-        # calculate cosine-similarity between hr_embeddings and targets 
-        batch_scores = torch.mm(hr_tensor[i:step,: ], entity_tensor.t())
-        batch_labels = target[i:step].to(batch_scores.device)
-
-        masked_batch_scores = mask_knows_triples(batch_triples=examples[i:step], batch_scores=batch_scores)
-        
-        # sort mask results
-        sorted_scores , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
-        correct_entities = torch.eq(sorted_idx, batch_labels)
-        ranks = torch.nonzero(correct_entities, as_tuple=False)[:,1]
-
-        all_ranks.extend(ranks.tolist())
-
-    hit1 = get_hit_at_k(all_ranks, k = 1)
-    hit3 = get_hit_at_k(all_ranks, k = 3)
-    hit10 = get_hit_at_k(all_ranks, k = 10)
-    mean_rank = sum(all_ranks) / len(all_ranks) + 1
-    mrr = sum([1/(item +1) for item in all_ranks]) / len(all_ranks)
-
-    topk_scores.extend(sorted_scores[:, :k].tolist())
-    topk_indices.extend(sorted_idx[:, :k].tolist())
-
-    metrics = {'mean_rank': round(mean_rank, 4), 'mrr': round(mrr, 4), 'hit@1': round(hit1, 4), 'hit@3': round(hit3, 4), 'hit@10': round(hit10, 4)}
-    eval_dir = 'forward' if eval_forward else 'backward'
-    logger.info('{} metrics: {}'.format(eval_dir, json.dumps(metrics)))
-
-   
-    return metrics
-
-
-if __name__ == '__main__':
-    predict_by_split()
+            
+if __name__ == "__main__":
+    main()
