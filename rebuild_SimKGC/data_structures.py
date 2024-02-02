@@ -345,7 +345,7 @@ def add_neighbor_names(head_id, tail_id):
         if n_tail_id == tail_id or tail_id == head_id:
             continue
         n_tail_name = entity_dict.get_entity_by_id(n_tail_id)["entity"]
-        neighbor_string += f", {n_tail_id}"
+        neighbor_string += f", {n_tail_name}"
     return neighbor_string
 
     """ global entities

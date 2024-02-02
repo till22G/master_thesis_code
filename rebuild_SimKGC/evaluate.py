@@ -59,7 +59,7 @@ def get_hr_embeddings(eval_model, test_data):
     test_data_loader = torch.utils.data.DataLoader(
         test_dataset,
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=False,
         collate_fn=collate_fn,
         pin_memory=True,
         drop_last=False,
@@ -88,7 +88,7 @@ def get_entity_embeddings(entity_dict, eval_model):
     entity_data_loader = torch.utils.data.DataLoader(
         entity_data_set,
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=False,
         collate_fn=collate_fn,
         pin_memory=True,
         drop_last=False,
@@ -176,9 +176,13 @@ def predict_by_split():
     assert os.path.exists(args.valid_path)
     assert os.path.exists(args.train_path)
 
-    predictor = BertPredictor()
-    predictor.load(ckt_path=args.eval_model_path)
-    entity_tensor = predictor.predict_by_entities(entity_dict.entities)
+    #predictor = BertPredictor()
+    #predictor.load(ckt_path=args.eval_model_path)
+    predictor = EvaluationModel()
+    predictor.load_checkpoint(args.eval_model_path)
+    entity_tensor = get_entity_embeddings(entity_dict=entity_dict, eval_model=predictor)
+    
+    #entity_tensor = predictor.predict_by_entities(entity_dict.entities)
 
     forward_metrics = eval_single_direction(predictor,
                                             entity_tensor=entity_tensor,
@@ -204,13 +208,10 @@ def eval_single_direction(predictor: BertPredictor,
     start_time = time()
     examples = load_data(args.valid_path, add_forward_triplet=eval_forward, add_backward_triplet=not eval_forward)
 
-    my_predictor = EvaluationModel()
-    my_predictor.load_checkpoint(checkpoint_path=args.eval_model_path)
 
-    #entity_tensor = get_entity_embeddings(entity_dict=entity_dict, eval_model=my_predictor)
-    #hr_tensor = get_hr_embeddings(my_predictor, examples)
+    hr_tensor = get_hr_embeddings(predictor, examples)
 
-    hr_tensor, _ = predictor.predict_by_examples(examples)
+    #hr_tensor, _ = predictor.predict_by_examples(examples)
     hr_tensor = hr_tensor.to(entity_tensor.device)
     target = [entity_dict.entity_to_idx(ex.tail_id) for ex in examples]
     logger.info('predict tensor done, compute metrics...')

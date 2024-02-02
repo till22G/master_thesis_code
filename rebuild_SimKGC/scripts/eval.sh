@@ -20,7 +20,7 @@ if [ -z "$DATA_DIR" ]; then
   DATA_DIR="${DIR}/data/${task}"
 fi
 
-test_path="${DATA_DIR}/test.txt.json"
+test_path="${DATA_DIR}/test.json"
 if [[ $# -ge 1 && ! "$1" == "--"* ]]; then
     test_path=$1
     shift
@@ -43,5 +43,5 @@ python3 -u evaluate.py \
 --eval-model-path "${model_path}" \
 --neighbor-weight "${neighbor_weight}" \
 --rerank-n-hop "${rerank_n_hop}" \
---train-path "${DATA_DIR}/train.txt.json" \
+--train-path "${DATA_DIR}/train.json" \
 --valid-path "${test_path}" "$@"
