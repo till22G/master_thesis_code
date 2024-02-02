@@ -106,6 +106,39 @@ def get_entity_embeddings(entity_dict, eval_model):
     return torch.cat(embedded_entities_list, dim=0)
 
 
+def get_labels_as_idx(triples):
+    labels = []
+    entity_dict = entity_dict
+    for triple in triples:
+        entity_id = triple.get_tail_id()
+        entity_idx = entity_dict.entity_to_idx(entity_id)
+        labels.append(entity_idx)
+    
+    return labels
+
+
+# ignore all known true triples for scoring (filtered setting)
+def mask_knows_triples(batch_triples, batch_scores):
+    for i in range(len(batch_triples)):
+        triple = batch_triples[i]
+        
+        all_triples = all_triplet_dict
+        neighbors = all_triples.get_neighbors(triple.get_head_id(), triple.get_relation())
+        tail_id = triple.get_tail_id() 
+        mask_idx = [entity_dict.entity_to_idx(entity_id) for entity_id in neighbors if entity_id != tail_id]
+        mask_idx = torch.LongTensor(mask_idx).to(batch_scores.device)
+        batch_scores[i].index_fill_(0, mask_idx, -1)
+    
+    return batch_scores
+        
+def get_hit_at_k(ranks, k=1):
+    hits = 0
+    for rank in ranks:
+        if rank <= k:
+            hits += 1
+    return hits / len(ranks)
+
+
 @torch.no_grad()
 def compute_metrics(hr_tensor: torch.tensor,
                     entities_tensor: torch.tensor,
@@ -133,7 +166,7 @@ def compute_metrics(hr_tensor: torch.tensor,
         rerank_by_graph(batch_score, examples[start:end], entity_dict=entity_dict)
 
         # filter known triplets
-        for idx in range(batch_score.size(0)):
+        """ for idx in range(batch_score.size(0)):
             mask_indices = []
             cur_ex = examples[start + idx]
             gold_neighbor_ids = all_triplet_dict.get_neighbors(cur_ex.head_id, cur_ex.relation)
@@ -144,7 +177,9 @@ def compute_metrics(hr_tensor: torch.tensor,
                     continue
                 mask_indices.append(entity_dict.entity_to_idx(e_id))
             mask_indices = torch.LongTensor(mask_indices).to(batch_score.device)
-            batch_score[idx].index_fill_(0, mask_indices, -1)
+            batch_score[idx].index_fill_(0, mask_indices, -1) """
+        
+        batch_score = mask_knows_triples(batch_triples= examples[start:end], batch_scores=batch_score)
 
         batch_sorted_score, batch_sorted_indices = torch.sort(batch_score, dim=-1, descending=True)
         target_rank = torch.nonzero(batch_sorted_indices.eq(batch_target).long(), as_tuple=False)
