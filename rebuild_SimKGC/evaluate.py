@@ -96,9 +96,9 @@ def get_entity_embeddings(entity_dict, eval_model):
         )
     
     embedded_entities_list = []
-    for i, batch_dict in enumerate(tqdm.tqdm(entity_data_loader)):
-        if torch.cuda.is_available():
-            batch_dict = move_to_cuda(batch_dict)
+    for _ , batch_dict in enumerate(tqdm.tqdm(entity_data_loader)):
+        #if torch.cuda.is_available():
+        #    batch_dict = move_to_cuda(batch_dict)
         batch_dict["only_ent_embedding"] = True
         embedded_entities = eval_model.encode_candidates(batch_dict)
         embedded_entities_list.append(embedded_entities)

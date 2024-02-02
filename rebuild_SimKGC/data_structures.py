@@ -320,8 +320,8 @@ class DataPoint():
         print("------------ head decoded -----------------")
         decoded_head_tokens =  create_tokenizer().decode(h_tokens["input_ids"])
         print(decoded_head_tokens)
-        print("---------------------------------------") """
-                 
+        print("---------------------------------------")
+                  """
         return {'hr_token_ids': hr_tokens["input_ids"],
                 'hr_token_type_ids': hr_tokens["token_type_ids"],
                 'tail_token_ids': t_tokens["input_ids"],

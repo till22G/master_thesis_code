@@ -24,7 +24,7 @@ class EvaluationModel():
         # load training checkpoint and restore training arguments
         checkpoint_dict = torch.load(checkpoint_path)
         self.train_args.__dict__ = checkpoint_dict["args"]
-        self._setup_args()
+        self._set_args()
 
         # load model state dict
         model_state_dict = checkpoint_dict["state_dict"]
@@ -45,37 +45,14 @@ class EvaluationModel():
         else: 
             logger.info("No GPU available. CPU will be used")
 
-
-    def _setup_args(self):
-        for k, v in args.__dict__.items():
-            if k not in self.train_args.__dict__:
-                logger.info('Set default attribute: {}={}'.format(k, v))
-                self.train_args.__dict__[k] = v
-        logger.info('Args used in training: {}'.format(json.dumps(self.train_args.__dict__, ensure_ascii=False, indent=4)))
-        #args.use_link_graph = self.train_args.use_link_graph
-        args.use_neighbors = self.train_args.use_neighbors
-        #args.use_context = self.train_args.use_context
-        #args.n_hops = self.train_args.n_hops
-        #args.shuffle_context = self.train_args.shuffle_context
-        #args.use_descriptions = self.train_args.use_descriptions
-        args.is_test = True
-
-
-    """ # need to check if that functions work as intended       
     def _set_args(self):
         for k, v in args.__dict__.items():
             if k not in self.train_args.__dict__:
                 logger.info('Set default attribute for train arg: {}={}'.format(k, v))
                 self.train_args.__dict__[k] = v
         logger.info('Args used in training: {}'.format(json.dumps(self.train_args.__dict__, ensure_ascii=False, indent=4)))
-        args.use_descriptions = True
-
-        #self._restore_train_args()
-
-    # need to check if that functions work as intended
-    def _restore_train_args(self):
-        for k, v in self.train_args.__dict__.items():
-            args.__dict__[k] = v """
+        args.use_neighbors = True
+        args.is_test = True
 
     # if the model has been trained with nn.DataParallel keys have a "module." prefix
     def _setup_model_state_dict(self, state_dict):
