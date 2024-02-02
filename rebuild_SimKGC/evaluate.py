@@ -108,7 +108,6 @@ def get_entity_embeddings(entity_dict, eval_model):
 
 def get_labels_as_idx(triples):
     labels = []
-    entity_dict = entity_dict
     for triple in triples:
         entity_id = triple.get_tail_id()
         entity_idx = entity_dict.entity_to_idx(entity_id)
@@ -163,7 +162,7 @@ def compute_metrics(hr_tensor: torch.tensor,
         batch_target = target[start:end]
 
         # re-ranking based on topological structure
-        rerank_by_graph(batch_score, examples[start:end], entity_dict=entity_dict)
+        #rerank_by_graph(batch_score, examples[start:end], entity_dict=entity_dict)
 
         # filter known triplets
         """ for idx in range(batch_score.size(0)):
@@ -248,7 +247,8 @@ def eval_single_direction(predictor: BertPredictor,
 
     #hr_tensor, _ = predictor.predict_by_examples(examples)
     hr_tensor = hr_tensor.to(entity_tensor.device)
-    target = [entity_dict.entity_to_idx(ex.tail_id) for ex in examples]
+    #target = [entity_dict.entity_to_idx(ex.tail_id) for ex in examples]
+    target = get_labels_as_idx(triples=examples)
     logger.info('predict tensor done, compute metrics...')
 
     topk_scores, topk_indices, metrics, ranks = compute_metrics(hr_tensor=hr_tensor, entities_tensor=entity_tensor,
@@ -257,7 +257,7 @@ def eval_single_direction(predictor: BertPredictor,
     eval_dir = 'forward' if eval_forward else 'backward'
     logger.info('{} metrics: {}'.format(eval_dir, json.dumps(metrics)))
 
-    pred_infos = []
+    """  pred_infos = []
     for idx, ex in enumerate(examples):
         cur_topk_scores = topk_scores[idx]
         cur_topk_indices = topk_indices[idx]
@@ -278,7 +278,7 @@ def eval_single_direction(predictor: BertPredictor,
     with open('{}/eval_{}_{}_{}.json'.format(prefix, split, eval_dir, basename), 'w', encoding='utf-8') as writer:
         writer.write(json.dumps([asdict(info) for info in pred_infos], ensure_ascii=False, indent=4))
 
-    logger.info('Evaluation takes {} seconds'.format(round(time() - start_time, 3)))
+    logger.info('Evaluation takes {} seconds'.format(round(time() - start_time, 3))) """
     return metrics
 
 
