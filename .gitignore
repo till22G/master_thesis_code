@@ -3,5 +3,4 @@
 __pycache__/
 /model_checkpoints
 rebuild_SimKGC/data
-rebuild_SimKGC/scripts
 checkpoint
