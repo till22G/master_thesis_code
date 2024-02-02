@@ -145,68 +145,11 @@ def compute_metrics(hr_tensor: torch.tensor,
                     target: List[int],
                     examples: List[DataPoint],
                     k=3, batch_size=256) -> Tuple:
-    assert hr_tensor.size(1) == entities_tensor.size(1)
-    total = hr_tensor.size(0)
-    entity_cnt = len(entity_dict)
-    assert entity_cnt == entities_tensor.size(0)
-    target = torch.LongTensor(target).unsqueeze(-1).to(hr_tensor.device)
+
+    """ target = torch.LongTensor(target).unsqueeze(-1).to(hr_tensor.device)
     topk_scores, topk_indices = [], []
     ranks = []
-
     mean_rank, mrr, hit1, hit3, hit10 = 0, 0, 0, 0, 0
-
-    all_scores = []
-    for start in tqdm.tqdm(range(0, total, batch_size)):
-        end = start + batch_size
-        # batch_size * entity_cnt
-        batch_score = torch.mm(hr_tensor[start:end, :], entities_tensor.t())
-        assert entity_cnt == batch_score.size(1)
-        batch_target = target[start:end]
-
-        # re-ranking based on topological structure
-        #rerank_by_graph(batch_score, examples[start:end], entity_dict=entity_dict)
-
-        # filter known triplets
-        """ for idx in range(batch_score.size(0)):
-            mask_indices = []
-            cur_ex = examples[start + idx]
-            gold_neighbor_ids = all_triplet_dict.get_neighbors(cur_ex.head_id, cur_ex.relation)
-            if len(gold_neighbor_ids) > 10000:
-                logger.debug('{} - {} has {} neighbors'.format(cur_ex.head_id, cur_ex.relation, len(gold_neighbor_ids)))
-            for e_id in gold_neighbor_ids:
-                if e_id == cur_ex.tail_id:
-                    continue
-                mask_indices.append(entity_dict.entity_to_idx(e_id))
-            mask_indices = torch.LongTensor(mask_indices).to(batch_score.device)
-            batch_score[idx].index_fill_(0, mask_indices, -1) """
-        
-        batch_score = mask_knows_triples(batch_triples= examples[start:end], batch_scores=batch_score)
-
-        batch_sorted_score, batch_sorted_indices = torch.sort(batch_score, dim=-1, descending=True)
-        target_rank = torch.nonzero(batch_sorted_indices.eq(batch_target).long(), as_tuple=False)
-        assert target_rank.size(0) == batch_score.size(0)
-        for idx in range(batch_score.size(0)):
-            idx_rank = target_rank[idx].tolist()
-            assert idx_rank[0] == idx
-            cur_rank = idx_rank[1]
-
-            # 0-based -> 1-based
-            cur_rank += 1
-            mean_rank += cur_rank
-            mrr += 1.0 / cur_rank
-            hit1 += 1 if cur_rank <= 1 else 0
-            hit3 += 1 if cur_rank <= 3 else 0
-            hit10 += 1 if cur_rank <= 10 else 0
-            ranks.append(cur_rank)
-
-        topk_scores.extend(batch_sorted_score[:, :k].tolist())
-        topk_indices.extend(batch_sorted_indices[:, :k].tolist())
-
-    metrics = {'mean_rank': mean_rank, 'mrr': mrr, 'hit@1': hit1, 'hit@3': hit3, 'hit@10': hit10}
-    metrics = {k: round(v / total, 4) for k, v in metrics.items()}
-    assert len(topk_scores) == total
-
-
     all_ranks = []
     topk_scores, topk_indices = [], []
     k = 3
@@ -221,7 +164,7 @@ def compute_metrics(hr_tensor: torch.tensor,
         masked_batch_scores = mask_knows_triples(batch_triples=examples[i:step], batch_scores=batch_scores)
         
         # sort mask results
-        _ , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
+        sorted_scores , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
         correct_entities = torch.eq(sorted_idx, batch_labels)
         ranks = torch.nonzero(correct_entities, as_tuple=False)[:,1]
 
@@ -233,15 +176,13 @@ def compute_metrics(hr_tensor: torch.tensor,
     mean_rank = sum(all_ranks) / len(all_ranks) + 1
     mrr = sum([1/(item +1) for item in all_ranks]) / len(all_ranks)
 
-    print(hit1)
-    print(hit3)
-    print(hit10)
-    print(mean_rank)
-    print(mrr)
+    topk_scores.extend(sorted_scores[:, :k].tolist())
+    topk_indices.extend(sorted_idx[:, :k].tolist())
+
+    metrics = {'mean_rank': round(mean_rank, 4), 'mrr': round(mrr, 4), 'hit@1': round(hit1, 4), 'hit@3': round(hit3, 4), 'hit@10': round(hit10, 4)} """
 
 
-
-
+    ## top k-scroes is reported wrongly
     return topk_scores, topk_indices, metrics, ranks
 
 
@@ -290,34 +231,48 @@ def eval_single_direction(predictor: BertPredictor,
     target = get_labels_as_idx(triples=examples)
     logger.info('predict tensor done, compute metrics...')
 
-    topk_scores, topk_indices, metrics, ranks = compute_metrics(hr_tensor=hr_tensor, entities_tensor=entity_tensor,
+    """ topk_scores, topk_indices, metrics, ranks = compute_metrics(hr_tensor=hr_tensor, entities_tensor=entity_tensor,
                                                                 target=target, examples=examples,
-                                                                batch_size=batch_size)
+                                                                batch_size=batch_size) """
+    
+    target = torch.LongTensor(target).unsqueeze(-1).to(hr_tensor.device)
+    topk_scores, topk_indices = [], []
+    ranks = []
+    mean_rank, mrr, hit1, hit3, hit10 = 0, 0, 0, 0, 0
+    all_ranks = []
+    topk_scores, topk_indices = [], []
+    k = 3
+    total = hr_tensor.size(0)
+    for i in tqdm.tqdm(range(0, hr_tensor.size(0), args.batch_size)):
+        step = i + args.batch_size
+
+        # calculate cosine-similarity between hr_embeddings and targets 
+        batch_scores = torch.mm(hr_tensor[i:step,: ], entity_tensor.t())
+        batch_labels = target[i:step].to(batch_scores.device)
+
+        masked_batch_scores = mask_knows_triples(batch_triples=examples[i:step], batch_scores=batch_scores)
+        
+        # sort mask results
+        sorted_scores , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
+        correct_entities = torch.eq(sorted_idx, batch_labels)
+        ranks = torch.nonzero(correct_entities, as_tuple=False)[:,1]
+
+        all_ranks.extend(ranks.tolist())
+
+    hit1 = get_hit_at_k(all_ranks, k = 1)
+    hit3 = get_hit_at_k(all_ranks, k = 3)
+    hit10 = get_hit_at_k(all_ranks, k = 10)
+    mean_rank = sum(all_ranks) / len(all_ranks) + 1
+    mrr = sum([1/(item +1) for item in all_ranks]) / len(all_ranks)
+
+    topk_scores.extend(sorted_scores[:, :k].tolist())
+    topk_indices.extend(sorted_idx[:, :k].tolist())
+
+    metrics = {'mean_rank': round(mean_rank, 4), 'mrr': round(mrr, 4), 'hit@1': round(hit1, 4), 'hit@3': round(hit3, 4), 'hit@10': round(hit10, 4)}
     eval_dir = 'forward' if eval_forward else 'backward'
     logger.info('{} metrics: {}'.format(eval_dir, json.dumps(metrics)))
 
-    """  pred_infos = []
-    for idx, ex in enumerate(examples):
-        cur_topk_scores = topk_scores[idx]
-        cur_topk_indices = topk_indices[idx]
-        pred_idx = cur_topk_indices[0]
-        cur_score_info = {entity_dict.get_entity_by_idx(topk_idx)["entity"]: round(topk_score, 3)
-                          for topk_score, topk_idx in zip(cur_topk_scores, cur_topk_indices)}
-
-        pred_info = PredInfo(head=ex.head, relation=ex.relation,
-                             tail=ex.tail, pred_tail=entity_dict.get_entity_by_idx(pred_idx)["entity"],
-                             pred_score=round(cur_topk_scores[0], 4),
-                             topk_score_info=json.dumps(cur_score_info),
-                             rank=ranks[idx],
-                             correct=pred_idx == target[idx])
-        pred_infos.append(pred_info)
-
-    prefix, basename = os.path.dirname(args.eval_model_path), os.path.basename(args.eval_model_path)
-    split = os.path.basename(args.valid_path)
-    with open('{}/eval_{}_{}_{}.json'.format(prefix, split, eval_dir, basename), 'w', encoding='utf-8') as writer:
-        writer.write(json.dumps([asdict(info) for info in pred_infos], ensure_ascii=False, indent=4))
-
-    logger.info('Evaluation takes {} seconds'.format(round(time() - start_time, 3))) """
+   
     return metrics
 
 
