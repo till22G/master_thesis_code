@@ -67,7 +67,7 @@ def get_hr_embeddings(eval_model, test_data):
         )
     
     embedded_hr_list = []
-    for i, batch_dict in enumerate(tqdm(test_data_loader)):
+    for i, batch_dict in enumerate((test_data_loader)):
         if torch.cuda.is_available():
             batch_dict = move_to_cuda(batch_dict)
         embedded_hr = eval_model.encode_hr(batch_dict)
@@ -96,7 +96,7 @@ def get_entity_embeddings(entity_dict, eval_model):
         )
     
     embedded_entities_list = []
-    for i, batch_dict in enumerate(tqdm(entity_data_loader)):
+    for i, batch_dict in enumerate(tqdm.tqdm(entity_data_loader)):
         if torch.cuda.is_available():
             batch_dict = move_to_cuda(batch_dict)
         batch_dict["only_ent_embedding"] = True
@@ -204,9 +204,11 @@ def eval_single_direction(predictor: BertPredictor,
     start_time = time()
     examples = load_data(args.valid_path, add_forward_triplet=eval_forward, add_backward_triplet=not eval_forward)
 
-    #my_predictor = EvaluationModel()
-    #get_hr_embeddings(my_predictor, examples)
+    my_predictor = EvaluationModel()
+    my_predictor.load_checkpoint(checkpoint_path=args.eval_model_path)
 
+    #entity_tensor = get_entity_embeddings(entity_dict=entity_dict, eval_model=my_predictor)
+    #hr_tensor = get_hr_embeddings(my_predictor, examples)
 
     hr_tensor, _ = predictor.predict_by_examples(examples)
     hr_tensor = hr_tensor.to(entity_tensor.device)

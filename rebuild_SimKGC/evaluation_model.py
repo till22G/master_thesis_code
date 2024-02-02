@@ -54,7 +54,7 @@ class EvaluationModel():
                 self.train_args.__dict__[k] = v
         logger.info('Args used in training: {}'.format(json.dumps(self.train_args.__dict__, ensure_ascii=False, indent=4)))
 
-        self._restore_train_args()
+        #self._restore_train_args()
 
     # need to check if that functions work as intended
     def _restore_train_args(self):

@@ -292,16 +292,16 @@ class DataPoint():
         
     def encode_to_dict(self) -> dict:
         
-        head_desc, tail_desc = self.head_desc, self.tail_desc
+        head_desc, tail_desc = self.get_head_desc(), self.get_tail_desc()
         
         # still need to code what happens when this is set to true
         if args.use_neighbors:
             # the entity names should be padded with information from neighbour if
             # their own description is to short
             if len(head_desc.split()) < 20:
-                head_desc = " ".join((head_desc, add_neighbor_names(self.head_id, self.tail_id)))
+                head_desc = " ".join((head_desc, add_neighbor_names(self.get_head_id(), self.get_tail_id())))
             if len(tail_desc.split()) < 20:
-                tail_desc = " ".join((tail_desc, add_neighbor_names(self.tail_id, self.head_id)))
+                tail_desc = " ".join((tail_desc, add_neighbor_names(self.get_tail_id(), self.get_head_id())))
                   
         head_text = _concat_name_desciption(self.get_head(), head_desc)
         hr_tokens = _tokenize_text(text=head_text, relation=self.relation)
