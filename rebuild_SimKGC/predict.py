@@ -40,8 +40,12 @@ class BertPredictor:
         state_dict = ckt_dict['state_dict']
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
-            if k.startswith('module.'):
-                k = k[len('module.'):]
+            if k.startswith("module."):
+                k = k[len("module."):]
+            if k.startswith("hr_bert"):
+                k = "bert_hr" + k[len("hr_bert"):]
+            if k.startswith("tail_bert"):
+                k = "bert_t" + k[len("tail_bert"):]
             new_state_dict[k] = v
         self.model.load_state_dict(new_state_dict, strict=True)
         self.model.eval()

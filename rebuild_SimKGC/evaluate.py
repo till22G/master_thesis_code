@@ -10,12 +10,14 @@ from dataclasses import dataclass, asdict
 
 from argparser import args
 #from doc import load_data, Example
-from data_structures import load_data, DataPoint, EntityDict, TrainingTripels
+from data_structures import load_data, DataPoint, EntityDict, TrainingTripels, Dataset, collate_fn
 from predict import BertPredictor
 #from dict_hub import get_entity_dict, get_all_triplet_dict
 #from triplet import EntityDict
 from rerank import rerank_by_graph
 from logger import logger
+from help_functions import move_to_cuda
+from evaluation_model import EvaluationModel
 
 
 
@@ -48,6 +50,60 @@ class PredInfo:
     topk_score_info: str
     rank: int
     correct: bool
+
+
+def get_hr_embeddings(eval_model, test_data):
+
+    test_dataset = Dataset(path="", data_points=test_data)
+
+    test_data_loader = torch.utils.data.DataLoader(
+        test_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        collate_fn=collate_fn,
+        pin_memory=True,
+        drop_last=False,
+        num_workers=args.num_workers
+        )
+    
+    embedded_hr_list = []
+    for i, batch_dict in enumerate(tqdm(test_data_loader)):
+        if torch.cuda.is_available():
+            batch_dict = move_to_cuda(batch_dict)
+        embedded_hr = eval_model.encode_hr(batch_dict)
+        embedded_hr_list.append(embedded_hr)
+
+    return torch.cat(embedded_hr_list, dim=0)
+
+def get_entity_embeddings(entity_dict, eval_model):
+    entity_datapoints = []
+    for entity in entity_dict.entities:
+        datapoint = DataPoint(tail_id=entity["entity_id"],
+                              tail=entity["entity"],
+                              tail_desc=entity["entity_desc"])
+        entity_datapoints.append(datapoint)
+
+    entity_data_set = Dataset(path="", data_points=entity_datapoints)
+
+    entity_data_loader = torch.utils.data.DataLoader(
+        entity_data_set,
+        batch_size=args.batch_size,
+        shuffle=True,
+        collate_fn=collate_fn,
+        pin_memory=True,
+        drop_last=False,
+        num_workers=args.num_workers
+        )
+    
+    embedded_entities_list = []
+    for i, batch_dict in enumerate(tqdm(entity_data_loader)):
+        if torch.cuda.is_available():
+            batch_dict = move_to_cuda(batch_dict)
+        batch_dict["only_ent_embedding"] = True
+        embedded_entities = eval_model.encode_candidates(batch_dict)
+        embedded_entities_list.append(embedded_entities)
+
+    return torch.cat(embedded_entities_list, dim=0)
 
 
 @torch.no_grad()
@@ -147,6 +203,10 @@ def eval_single_direction(predictor: BertPredictor,
                           batch_size=256) -> dict:
     start_time = time()
     examples = load_data(args.valid_path, add_forward_triplet=eval_forward, add_backward_triplet=not eval_forward)
+
+    #my_predictor = EvaluationModel()
+    #get_hr_embeddings(my_predictor, examples)
+
 
     hr_tensor, _ = predictor.predict_by_examples(examples)
     hr_tensor = hr_tensor.to(entity_tensor.device)
