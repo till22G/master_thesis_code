@@ -132,6 +132,7 @@ def mask_knows_triples(batch_triples, batch_scores):
         
 def get_hit_at_k(ranks, k=1):
     hits = 0
+    k = k-1
     for rank in ranks:
         if rank <= k:
             hits += 1
@@ -154,6 +155,7 @@ def compute_metrics(hr_tensor: torch.tensor,
 
     mean_rank, mrr, hit1, hit3, hit10 = 0, 0, 0, 0, 0
 
+    all_scores = []
     for start in tqdm.tqdm(range(0, total, batch_size)):
         end = start + batch_size
         # batch_size * entity_cnt
@@ -203,6 +205,43 @@ def compute_metrics(hr_tensor: torch.tensor,
     metrics = {'mean_rank': mean_rank, 'mrr': mrr, 'hit@1': hit1, 'hit@3': hit3, 'hit@10': hit10}
     metrics = {k: round(v / total, 4) for k, v in metrics.items()}
     assert len(topk_scores) == total
+
+
+    all_ranks = []
+    topk_scores, topk_indices = [], []
+    k = 3
+    total = hr_tensor.size(0)
+    for i in tqdm.tqdm(range(0, hr_tensor.size(0), args.batch_size)):
+        step = i + args.batch_size
+
+        # calculate cosine-similarity between hr_embeddings and targets 
+        batch_scores = torch.mm(hr_tensor[i:step,: ], entities_tensor.t())
+        batch_labels = target[i:step].to(batch_scores.device)
+
+        masked_batch_scores = mask_knows_triples(batch_triples=examples[i:step], batch_scores=batch_scores)
+        
+        # sort mask results
+        _ , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
+        correct_entities = torch.eq(sorted_idx, batch_labels)
+        ranks = torch.nonzero(correct_entities, as_tuple=False)[:,1]
+
+        all_ranks.extend(ranks.tolist())
+
+    hit1 = get_hit_at_k(all_ranks, k = 1)
+    hit3 = get_hit_at_k(all_ranks, k = 3)
+    hit10 = get_hit_at_k(all_ranks, k = 10)
+    mean_rank = sum(all_ranks) / len(all_ranks) + 1
+    mrr = sum([1/(item +1) for item in all_ranks]) / len(all_ranks)
+
+    print(hit1)
+    print(hit3)
+    print(hit10)
+    print(mean_rank)
+    print(mrr)
+
+
+
+
     return topk_scores, topk_indices, metrics, ranks
 
 
