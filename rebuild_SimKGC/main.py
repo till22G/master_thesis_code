@@ -1,13 +1,12 @@
 # this file should contain the model of SimKGC recreated from the description in the paper
 import argparse
-import torch
 import os
 
 from transformers import AutoModel, AutoTokenizer
 
 from argparser import args
 from logger import logger
-from my_trainer import CustomTrainer
+from trainer import CustomTrainer
 #from trainer import CustomTrainer
 
 def main():

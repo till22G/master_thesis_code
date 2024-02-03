@@ -37,11 +37,11 @@ if [ "${task}" = "wiki5m_ind" ]; then
   neighbor_weight=0.0
 fi
 
-python3 -u evaluate.py \
+python3 -u evaluation.py \
 --task "${task}" \
 --is-test \
 --eval-model-path "${model_path}" \
 --neighbor-weight "${neighbor_weight}" \
 --rerank-n-hop "${rerank_n_hop}" \
 --train-path "${DATA_DIR}/train.json" \
---valid-path "${test_path}" "$@"
+--test-path "${test_path}" "$@"
