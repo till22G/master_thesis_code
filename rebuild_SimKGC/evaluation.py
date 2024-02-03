@@ -4,9 +4,9 @@ import json
 import torch.utils.data.dataset
 
 from tqdm import tqdm
-from dataclasses import dataclass
+from typing import List
 
-from data_structures import TrainingTripels, EntityDict, Dataset, DataPoint, collate_fn, load_data
+from data_structures import TrainingTripels, EntityDict, Dataset, DataPoint, collate_fn, load_data, build_neighborhood_graph, build_entity_dict
 from argparser import args
 from logger import logger
 from help_functions import move_to_cuda
@@ -120,6 +120,30 @@ def get_hit_at_k(ranks, k=1):
             hits += 1
     return hits / len(ranks)
 
+def rerank(batch_score: torch.tensor,
+           datapoints: List[DataPoint]):
+
+    if args.task == 'wiki5m_ind':
+        assert args.neighbor_weight < 1e-6, 'Inductive setting can not use re-rank strategy'
+
+    if args.neighbor_weight < 1e-6:
+        return
+
+    entity_dict= build_entity_dict()
+    for idx in range(batch_score.size(0)):
+        cur_ex = datapoints[idx]
+        neigborhood_graph = build_neighborhood_graph()
+        n_hop_indices = neigborhood_graph.get_n_hop_entity_indices(cur_ex.get_head_id(),
+                                                                   entity_dict=entity_dict,
+                                                                   n_hop=args.rerank_n_hop)
+        delta = torch.tensor([args.neighbor_weight for _ in n_hop_indices]).to(batch_score.device)
+        n_hop_indices = torch.LongTensor(list(n_hop_indices)).to(batch_score.device)
+
+        batch_score[idx].index_add_(0, n_hop_indices, delta)
+
+    return batch_score
+
+
 def print_results(results, direction): 
     print("{}: Hit@1: {:.4f},  Hit@3: {:.4f},  Hit@10: {:.4f},  MRR: {:.4f} , Mean Rank: {:.4}"\
           .format(direction, 
@@ -172,7 +196,8 @@ def eval(model,
         batch_labels = labels[i:step].to(batch_scores.device)
 
         masked_batch_scores = mask_known_triples(batch_triples=test_data[i:step], batch_scores=batch_scores)
-        
+        masked_batch_scores = rerank(datapoints=test_data[i:step], batch_score=masked_batch_scores)
+       
         # sort mask results
         _ , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
         correct_entities = torch.eq(sorted_idx, batch_labels)
@@ -228,9 +253,8 @@ def main():
         results_both_directions[key] = avg
 
     print_results(results_both_directions, "Evaluation both directions")
-
     save_results([results_forward, results_backward, results_both_directions], eval_model.train_args)
 
-            
+
 if __name__ == "__main__":
     main()
