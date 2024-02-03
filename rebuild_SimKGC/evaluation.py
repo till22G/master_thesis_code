@@ -4,6 +4,7 @@ import json
 import torch.utils.data.dataset
 
 from tqdm import tqdm
+from dataclasses import dataclass
 
 from data_structures import TrainingTripels, EntityDict, Dataset, DataPoint, collate_fn, load_data
 from argparser import args
@@ -11,7 +12,8 @@ from logger import logger
 from help_functions import move_to_cuda
 from evaluation_model import EvaluationModel
 
-
+all_triples = None
+entity_dict = None
 
 def load_all_triples():
     global all_triples
@@ -28,9 +30,6 @@ def build_entity_dict():
         file_path = os.path.join(script_dir, os.path.join("data", args.task, "entities.json"))
         entity_dict = EntityDict(file_path)
     return entity_dict
-
-
-
 
 def get_hr_embeddings(eval_model, test_data):
 
@@ -57,9 +56,6 @@ def get_hr_embeddings(eval_model, test_data):
 
 script_dir = os.path.dirname(__file__)
 
-all_triples = None
-entity_dict = None
-
 
 def get_entity_embeddings(entity_dict, eval_model):
     entity_datapoints = []
@@ -83,8 +79,6 @@ def get_entity_embeddings(entity_dict, eval_model):
     
     embedded_entities_list = []
     for _ , batch_dict in enumerate(tqdm(entity_data_loader)):
-        #if torch.cuda.is_available():
-        #    batch_dict = move_to_cuda(batch_dict)
         batch_dict["only_ent_embedding"] = True
         embedded_entities = eval_model.encode_candidates(batch_dict)
         embedded_entities_list.append(embedded_entities)
@@ -104,7 +98,7 @@ def get_labels_as_idx(triples):
 
 
 # ignore all known true triples for scoring (filtered setting)
-def mask_knows_triples(batch_triples, batch_scores):
+def mask_known_triples(batch_triples, batch_scores):
     for i in range(len(batch_triples)):
         triple = batch_triples[i]
         
@@ -119,17 +113,47 @@ def mask_knows_triples(batch_triples, batch_scores):
         
 def get_hit_at_k(ranks, k=1):
     hits = 0
+    # best idx rank is 0
     k = k-1
     for rank in ranks:
         if rank <= k:
             hits += 1
     return hits / len(ranks)
 
+def print_results(results, direction): 
+    print("{}: Hit@1: {:.4f},  Hit@3: {:.4f},  Hit@10: {:.4f},  MRR: {:.4f} , Mean Rank: {:.4}"\
+          .format(direction, 
+                  results["hit_1"], 
+                  results["hit_3"], 
+                  results["hit_10"], 
+                  results["mrr"], 
+                  results["mean_rank"]))
+
+def save_results(results, train_args):
+    file_path = os.path.join(os.path.dirname(args.eval_model_path), "evaluation_metrics_{}.txt".format(os.path.basename(args.eval_model_path)))
+    print('saving results to" {}'.format(file_path))
+    with open(file_path, 'w') as file:
+        file.write("Model info (training arguments): \n \n")
+        for k, v in train_args.__dict__.items():
+            file.write(f'{k}: {v} \n')
+        file.write('\n')
+
+        for i, direction in enumerate(["evluation forward", "evluation backward", "evluation both directions"]):
+            result = results[i]
+            output = "{}: Hit@1: {:.4f},  Hit@3: {:.4f},  Hit@10: {:.4f},  MRR: {:.4f}, Mean Rank: {:.4}"\
+                        .format(direction, 
+                                result["hit_1"], 
+                                result["hit_3"], 
+                                result["hit_10"], 
+                                result["mrr"], 
+                                result["mean_rank"])
+            file.write(output + '\n')
+    
+
 def eval(model, 
          candidates, 
          forward_triples=True):
     
-    print(args.test_path)
     test_data = load_data(path=args.test_path, 
                           add_forward_triplet=forward_triples, 
                           add_backward_triplet=not forward_triples)
@@ -140,9 +164,6 @@ def eval(model,
     
     mean_rank, mrr, hit1, hit3, hit10 = 0, 0, 0, 0, 0
     all_ranks = []
-    topk_scores, topk_indices = [], []
-    k = 3
-    total = hr_embeddings.size(0)
     for i in tqdm(range(0, hr_embeddings.size(0), args.batch_size)):
         step = i + args.batch_size
 
@@ -150,7 +171,7 @@ def eval(model,
         batch_scores = torch.mm(hr_embeddings[i:step,: ], candidates.t())
         batch_labels = labels[i:step].to(batch_scores.device)
 
-        masked_batch_scores = mask_knows_triples(batch_triples=test_data[i:step], batch_scores=batch_scores)
+        masked_batch_scores = mask_known_triples(batch_triples=test_data[i:step], batch_scores=batch_scores)
         
         # sort mask results
         _ , sorted_idx = torch.sort(masked_batch_scores, dim=1, descending=True) 
@@ -165,13 +186,20 @@ def eval(model,
     mean_rank = sum(all_ranks) / len(all_ranks) + 1
     mrr = sum([1/(item +1) for item in all_ranks]) / len(all_ranks)
 
-    print(hit1)
-    print(hit3)
-    print(hit10)
-    print(mean_rank)
-    print(mrr)
+    results = {"hit_1" : hit1,
+               "hit_3" : hit3,
+               "hit_10": hit10,
+               "mean_rank" : mean_rank,
+               "mrr" : mrr}
+    
+    if forward_triples:
+        direction = "forward evaluation"
+    else:
+        direction = "backward evaluation"
 
+    print_results(results, direction)
 
+    return results
 
 def main():
     train_path = args.train_path
@@ -194,6 +222,14 @@ def main():
                             candidates=entity_embeddings,
                             forward_triples=False)
     
+    results_both_directions = {}
+    for key in results_forward.keys():
+        avg = (results_forward[key] + results_backward[key]) / 2
+        results_both_directions[key] = avg
+
+    print_results(results_both_directions, "Evaluation both directions")
+
+    save_results([results_forward, results_backward, results_both_directions], eval_model.train_args)
 
             
 if __name__ == "__main__":
