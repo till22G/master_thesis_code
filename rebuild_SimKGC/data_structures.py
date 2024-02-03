@@ -138,6 +138,9 @@ class NeighborhoodGraph:
         if end - start > self.max_context_size: 
             context = context[:self.max_context_size]
         return context
+    
+    def get(self, item):
+        return self[item]
 
     def get_neighbors(self, item):
         if item == '':
@@ -262,15 +265,16 @@ def _tokenize(head: str, context: Optional[str] = None, text_pair: Optional[str]
     # encode head (including descriptions) and truncate the string to the max number of tokens set
     head_encodings = tokenizer.encode(head, max_length=args.max_num_desc_tokens, truncation=True, add_special_tokens=False)
     head = tokenizer.decode(head_encodings) # decode to get the string bet for better string manipulation
-
     # concatenate of context is passed along
-    if context: text = head + " : " + context
-    else: text = head
+    if context: 
+        text = head + " : " + context
+    else: 
+        text = head
 
     encodings = tokenizer(text=text,
                           text_pair=text_pair if text_pair else None,
                           add_special_tokens=True,
-                          max_length=tokenizer.model_max_length,
+                          max_length=512, # tokenizer.model_max_length results in an error
                           return_token_type_ids=True,
                           truncation=True)
     return encodings
@@ -288,6 +292,7 @@ def _build_context_string(head_id: str, relation: str, tail_id: str, max_context
     context_string = ""
     if head_id == "":
         return ""
+    entity_dict = build_entity_dict()
     head_idx = entity_dict.entity_to_idx(head_id)
     context = build_neighborhood_graph().get(head_idx)
 
@@ -295,7 +300,7 @@ def _build_context_string(head_id: str, relation: str, tail_id: str, max_context
         n_relation, n_tail_id = neighbor
         if n_tail_id == tail_id or tail_id == head_id:
             continue
-        n_tail_text = entity_dict.get_entity_by_id(n_tail_id).entity
+        n_tail_text = entity_dict.get_entity_by_id(n_tail_id)["entity"]
         if use_context_descriptions:
             n_tail_desc = ' '.join(entity_dict.get_entity_by_id(n_tail_id).entity_desc.split()[:50])
             n_tail_text = _concat_name_desc(n_tail_text, n_tail_desc)
@@ -380,8 +385,8 @@ class DataPoint():
             if len(tail_desc.split()) < 20:
                 tail_desc += ' ' + add_neighbor_names(head_id=self.get_tail_id(), tail_id=self.get_head_id())
 
-            head_word = _concat_name_desc(self.get_head()), head_desc
-            tail_word = _concat_name_desc(self.get_tail()), tail_desc
+            head_word = _concat_name_desc(self.get_head(), head_desc)
+            tail_word = _concat_name_desc(self.get_tail(), tail_desc)
 
         if args.use_head_context:
             head_word = self.get_head()
@@ -424,18 +429,18 @@ class DataPoint():
 
          
         text_pair = self.relation
-        hr_tokens = _tokenize(text1=head_word,
-                              text2=head_context,
+        hr_tokens = _tokenize(head=head_word,
+                              context=head_context,
                               text_pair=text_pair)
 
-        h_tokens = _tokenize(text1=head_word)
+        h_tokens = _tokenize(head=head_word)
 
         
-        t_tokens = _tokenize(text1=tail_word,
-                             text2=tail_context,)
+        t_tokens = _tokenize(head=tail_word,
+                             context=tail_context,)
 
         """ print("---------------- Head-relation decoded ----------------")
-        decoded_hr_tokens =  get_tokenizer().decode(hr_encoded_inputs["input_ids"])
+        decoded_hr_tokens =  create_tokenizer().decode(hr_tokens["input_ids"])
         print(decoded_hr_tokens)
 
         print("original:")
@@ -444,7 +449,7 @@ class DataPoint():
         print("-"*100)
 
         print("---------------- Tail decoded ----------------")
-        decoded_tail_tokens =  get_tokenizer().decode(tail_encoded_inputs["input_ids"])
+        decoded_tail_tokens =  create_tokenizer().decode(t_tokens["input_ids"])
         print(decoded_tail_tokens)
 
         print("original:")
@@ -453,7 +458,7 @@ class DataPoint():
         print("-"*100)
 
         print("---------------- Head decoded ----------------")
-        decoded_h_tokens =  get_tokenizer().decode(head_encoded_inputs["input_ids"])
+        decoded_h_tokens =  create_tokenizer().decode(h_tokens["input_ids"])
         print(decoded_h_tokens)
         print("---------------------------------------") """
 

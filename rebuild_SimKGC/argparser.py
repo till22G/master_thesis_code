@@ -16,8 +16,6 @@ parser.add_argument("--test-path", default="", type=str,
                     help="Define the path to the test data")
 parser.add_argument("--max-number-tokens", default=50, type=int,
                     help="Specify the maximal number of tokens returned by the tokenizer")
-parser.add_argument("--use-descriptions", action="store_true",
-                    help="Use the entity descriptions in the encodings")
 parser.add_argument("--t", default=0.05, type=float, 
                     help="temperature parameter for loss function")
 parser.add_argument("--finetune-t", action="store_true",
@@ -84,15 +82,14 @@ parser.add_argument("--is-test", action="store_true")
 parser.add_argument("--eval-model-path")
 parser.add_argument("--neighbor-weight", default=0.05, type=float)
 parser.add_argument("--rerank-n-hop", default=2, type=int)
-parser.add_argument("--max-to-keep", default=3, type=int)
 
 args = parser.parse_args()
 
 
 # assertions for context integration
-if args.use_link_graph:
+if args.use_neighbors:
     assert not (args.use_head_context or args.use_tail_context)
     assert args.use_descriptions
 
 if (args.use_head_context or args.use_tail_context):
-    assert not args.use_link_graph
+    assert not args.use_neighbors
