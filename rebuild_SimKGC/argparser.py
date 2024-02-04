@@ -49,6 +49,15 @@ parser.add_argument("--model-dir", default="test_model_dict", type=str,
 parser.add_argument("--num-workers", default=1, type=int,
                     help="specify the number of workers for the data loaders")
 
+# arguments for evaluation
+parser.add_argument("--is-test", action="store_true",
+                    help="is automatically set for evaluation")
+parser.add_argument("--eval-model-path", default="", type=str,
+                    help="set the path the the trained model for evaluation")   
+parser.add_argument("--neighbor-weight", default=0.05, type=float,
+                    help="set weight for neighborhood based re-ranking")
+parser.add_argument("--rerank-n-hop", default=2, type=int,
+                    help="set number of hoops used for neiborhood based re-ranking")
 
 # context related arguments
 parser.add_argument("--use-neighbors", action="store_true",
@@ -77,11 +86,6 @@ parser.add_argument('--custom-model-init', action='store_true',
 parser.add_argument("--bert-config", type=json.loads, default=None, 
                     help="JSON string representing BertConfig")
 
-# their arguments
-parser.add_argument("--is-test", action="store_true")
-parser.add_argument("--eval-model-path")
-parser.add_argument("--neighbor-weight", default=0.05, type=float)
-parser.add_argument("--rerank-n-hop", default=2, type=int)
 
 args = parser.parse_args()
 

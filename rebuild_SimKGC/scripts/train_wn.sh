@@ -32,14 +32,13 @@ python3 -u main.py \
 --pre-batch 0 \
 --finetune-t \
 --num-epochs 50 \
---num-workers 20 \
+--num-workers 1 \
 --use-descriptions \
+--max-num-desc-tokens 50 \
 --max-context-size $MAX_CONTEXT_SIZE \
 --use-head-context \
 --use-tail-context \
---max-num-desc-tokens 50 \
-#--use-context-relation \
-#--use-descriptions \
+--use-context-relation \
 #--use-link-graph \
 #--description-length 15
 #--custom-model-init 

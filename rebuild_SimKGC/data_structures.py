@@ -206,42 +206,11 @@ def load_entities(path) -> None:
     logger.info("{} entity descriptinos loaded".format(len(entities)))
     
 
-def _concat_name_desciption(entity_head: str, entity_desc: str):
-    if not entity_desc:
-        return entity_head
-    if entity_desc.startswith(entity_head):
-        entity_desc = entity_desc[len(entity_head):].strip()
-    return "{}: {}".format(entity_head, entity_desc)
-
 def create_tokenizer():
     global tokenizer
     if tokenizer == None:
         tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
     return tokenizer
-
-def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
-    global tokenizer
-    if tokenizer is None:
-        create_tokenizer()
-    
-    tokens = tokenizer(text,
-                       text_pair = relation,
-                       add_special_tokens = True,
-                       truncation=True,
-                       max_length = args.max_number_tokens,
-                       return_token_type_ids = True)
-    
-    return tokens
-
-
-""" def get_neighbor_desc(head_id: str, tail_id: str = None) -> str:
-    neighbor_ids = build_neighborhood_graph().get_neighbor_ids(head_id)
-    # avoid label leakage during training
-    if not args.is_test:
-        neighbor_ids = [n_id for n_id in neighbor_ids if n_id != tail_id]
-    entities = [entity_dict.get_entity_by_id(n_id).entity for n_id in neighbor_ids]
-    entities = [entity for entity in entities]
-    return ' '.join(entities) """
 
 
 def add_neighbor_names(head_id, tail_id):
@@ -439,7 +408,7 @@ class DataPoint():
         t_tokens = _tokenize(head=tail_word,
                              context=tail_context,)
 
-        """ print("---------------- Head-relation decoded ----------------")
+        print("---------------- Head-relation decoded ----------------")
         decoded_hr_tokens =  create_tokenizer().decode(hr_tokens["input_ids"])
         print(decoded_hr_tokens)
 
@@ -460,7 +429,7 @@ class DataPoint():
         print("---------------- Head decoded ----------------")
         decoded_h_tokens =  create_tokenizer().decode(h_tokens["input_ids"])
         print(decoded_h_tokens)
-        print("---------------------------------------") """
+        print("---------------------------------------")
 
         return {'hr_token_ids': hr_tokens["input_ids"],
                 'hr_token_type_ids': hr_tokens["token_type_ids"],
