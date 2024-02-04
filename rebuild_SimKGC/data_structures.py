@@ -407,7 +407,7 @@ class DataPoint():
             if args.use_descriptions:
                 tail_word = _concat_name_desc(tail_word, tail_desc)
 
-            tail_context = _build_context_string(self.get_tail(), self.get_relation(), self.get_head_id(),
+            tail_context = _build_context_string(self.get_tail_id(), self.get_relation(), self.get_head_id(),
                                                  max_context_size = args.max_context_size,
                                                  use_context_descriptions = args.use_context_descriptions)
         
