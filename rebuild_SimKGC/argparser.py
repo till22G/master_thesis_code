@@ -1,4 +1,5 @@
 import argparse
+import json
 
 parser = argparse.ArgumentParser(prog="replicated SimKGC",
                                  description="Argparser for replicating SimKGC")
@@ -15,11 +16,6 @@ parser.add_argument("--test-path", default="", type=str,
                     help="Define the path to the test data")
 parser.add_argument("--max-number-tokens", default=50, type=int,
                     help="Specify the maximal number of tokens returned by the tokenizer")
-parser.add_argument("--use-neighbors", action="store_true",
-                    help="Set whether context from neighboring nodes should be used when \
-                    the descriptions are short (< 20 tokens)")
-parser.add_argument("--use-descriptions", action="store_true",
-                    help="Use the entity descriptions in the encodings")
 parser.add_argument("--t", default=0.05, type=float, 
                     help="temperature parameter for loss function")
 parser.add_argument("--finetune-t", action="store_true",
@@ -53,10 +49,51 @@ parser.add_argument("--model-dir", default="test_model_dict", type=str,
 parser.add_argument("--num-workers", default=1, type=int,
                     help="specify the number of workers for the data loaders")
 
-# their arguments
-parser.add_argument("--is-test", action="store_true")
-parser.add_argument("--eval-model-path")
-parser.add_argument("--neighbor-weight", default=0.05, type=float)
-parser.add_argument("--rerank-n-hop", default=2, type=int)
-parser.add_argument("--max-to-keep", default=3, type=int)
+# arguments for evaluation
+parser.add_argument("--is-test", action="store_true",
+                    help="is automatically set for evaluation")
+parser.add_argument("--eval-model-path", default="", type=str,
+                    help="set the path the the trained model for evaluation")   
+parser.add_argument("--neighbor-weight", default=0.05, type=float,
+                    help="set weight for neighborhood based re-ranking")
+parser.add_argument("--rerank-n-hop", default=2, type=int,
+                    help="set number of hoops used for neiborhood based re-ranking")
+
+# context related arguments
+parser.add_argument("--use-neighbors", action="store_true",
+                    help="Set whether context from neighboring nodes should be used when \
+                    the descriptions are short (< 20 tokens)")
+parser.add_argument('--use-head-context', action='store_true',
+                    help='set this option to use conext for the head')
+parser.add_argument('--use-tail-context', action='store_true',
+                    help='set this option to use conext for the tail')
+parser.add_argument('--max-context-size', type=int, default=500,
+                    help='set the numbet max neighboring entities beeng used for context')
+parser.add_argument('--shuffle-context', action='store_true',
+                    help='set to shuffle all neighbords')
+parser.add_argument('--use-descriptions', action='store_true',
+                    help='use this option to add descriptions to the embddings')
+parser.add_argument('--max-num-desc-tokens', default=50, type=int,
+                    help='maximum number of tokens used for the description')
+parser.add_argument('--use-context-relation', action='store_true',
+                    help='set this option to add the relation of the context to the input string')
+parser.add_argument('--use-context-descriptions', action='store_true',
+                    help='set option to use descriptions of context entities')
+
+# arguments to init a custom model structure and to train model from scratch
+parser.add_argument('--custom-model-init', action='store_true',
+                    help='set this option to initialize a custom BERT like model to train from scratch')
+parser.add_argument("--bert-config", type=json.loads, default=None, 
+                    help="JSON string representing BertConfig")
+
+
 args = parser.parse_args()
+
+
+# assertions for context integration
+if args.use_neighbors:
+    assert not (args.use_head_context or args.use_tail_context)
+    assert args.use_descriptions
+
+if (args.use_head_context or args.use_tail_context):
+    assert not args.use_neighbors

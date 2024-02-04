@@ -138,6 +138,9 @@ class NeighborhoodGraph:
         if end - start > self.max_context_size: 
             context = context[:self.max_context_size]
         return context
+    
+    def get(self, item):
+        return self[item]
 
     def get_neighbors(self, item):
         if item == '':
@@ -203,36 +206,86 @@ def load_entities(path) -> None:
     logger.info("{} entity descriptinos loaded".format(len(entities)))
     
 
-def _concat_name_desciption(entity_head: str, entity_desc: str):
-    if not entity_desc:
-        return entity_head
-    if entity_desc.startswith(entity_head):
-        entity_desc = entity_desc[len(entity_head):].strip()
-    return "{}: {}".format(entity_head, entity_desc)
-
 def create_tokenizer():
     global tokenizer
     if tokenizer == None:
         tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model)
     return tokenizer
 
-def _tokenize_text(text:str, relation: Optional[str] = None) -> dict:
-    global tokenizer
-    if tokenizer is None:
-        create_tokenizer()
+
+def add_neighbor_names(head_id, tail_id):
+    global neigborhood_graph
+    if neigborhood_graph is None:
+        neigborhood_graph = build_neighborhood_graph()
+    neighbors = neigborhood_graph.get_neighbors(head_id)
     
-    tokens = tokenizer(text,
-                       text_pair = relation,
-                       add_special_tokens = True,
-                       truncation=True,
-                       max_length = args.max_number_tokens,
-                       return_token_type_ids = True)
+    neighbor_string = ""
+    for neighbor in neighbors:
+        _ , n_tail_id = neighbor
+        if n_tail_id == tail_id or tail_id == head_id:
+            continue
+        n_tail_name = entity_dict.get_entity_by_id(n_tail_id)["entity"]
+        neighbor_string += f", {n_tail_name}"
+    return neighbor_string
+
+
+def _tokenize(head: str, context: Optional[str] = None, text_pair: Optional[str] = None ) -> dict:
+    tokenizer = create_tokenizer()
+    # encode head (including descriptions) and truncate the string to the max number of tokens set
+    head_encodings = tokenizer.encode(head, max_length=args.max_num_desc_tokens, truncation=True, add_special_tokens=False)
+    head = tokenizer.decode(head_encodings) # decode to get the string bet for better string manipulation
+    # concatenate of context is passed along
+    if context: 
+        text = head + " : " + context
+    else: 
+        text = head
+
+    encodings = tokenizer(text=text,
+                          text_pair=text_pair if text_pair else None,
+                          add_special_tokens=True,
+                          max_length=512, # tokenizer.model_max_length results in an error
+                          return_token_type_ids=True,
+                          truncation=True)
+    return encodings
+
+
+def _concat_name_desc(entity: str, entity_desc: str) -> str:
+    if entity_desc.startswith(entity):
+        entity_desc = entity_desc[len(entity):].strip()
+    if entity_desc:
+        return '{}: {}'.format(entity, entity_desc)
+    return entity
+
+
+def _build_context_string(head_id: str, relation: str, tail_id: str, max_context_size: int, use_context_descriptions: bool):
+    context_string = ""
+    if head_id == "":
+        return ""
+    entity_dict = build_entity_dict()
+    head_idx = entity_dict.entity_to_idx(head_id)
+    context = build_neighborhood_graph().get(head_idx)
+
+    for neighbor in context[:max_context_size]:
+        n_relation, n_tail_id = neighbor
+        if n_tail_id == tail_id or tail_id == head_id:
+            continue
+        n_tail_text = entity_dict.get_entity_by_id(n_tail_id)["entity"]
+        if use_context_descriptions:
+            n_tail_desc = ' '.join(entity_dict.get_entity_by_id(n_tail_id).entity_desc.split()[:50])
+            n_tail_text = _concat_name_desc(n_tail_text, n_tail_desc)
+        if args.use_context_relation:
+            context_string += f", {n_relation} {n_tail_text}"
+        else:
+            context_string += f", {n_tail_text}"
+        if context_string == ", ":
+            return ""
     
-    return tokens
+    return f"{context_string[2:]}"
+
 
 class DataPoint():
     def __init__(self, 
-                 head_id: str = None, 
+                 head_id: str = None,
                  head: str = None,
                  head_desc: str = None,
                  relation: str = None, 
@@ -293,35 +346,91 @@ class DataPoint():
     def encode_to_dict(self) -> dict:
         
         head_desc, tail_desc = self.get_head_desc(), self.get_tail_desc()
-        
-        # still need to code what happens when this is set to true
+        head_context = ''
+        tail_context = ''
         if args.use_neighbors:
-            # the entity names should be padded with information from neighbour if
-            # their own description is to short
             if len(head_desc.split()) < 20:
-                head_desc = " ".join((head_desc, add_neighbor_names(self.get_head_id(), self.get_tail_id())))
+                head_desc += ' ' + add_neighbor_names(head_id=self.get_head_id(), tail_id=self.get_tail_id())
             if len(tail_desc.split()) < 20:
-                tail_desc = " ".join((tail_desc, add_neighbor_names(self.get_tail_id(), self.get_head_id())))
-                  
-        head_text = _concat_name_desciption(self.get_head(), head_desc)
-        hr_tokens = _tokenize_text(text=head_text, relation=self.relation)
-        
-        tail_text = _concat_name_desciption(self.get_tail(), tail_desc)
-        t_tokens = _tokenize_text(tail_text)
-        
-        h_tokens = _tokenize_text(head_text)
+                tail_desc += ' ' + add_neighbor_names(head_id=self.get_tail_id(), tail_id=self.get_head_id())
 
-        """ print("------------ head-rel decoded -----------------")
+            head_word = _concat_name_desc(self.get_head(), head_desc)
+            tail_word = _concat_name_desc(self.get_tail(), tail_desc)
+
+        if args.use_head_context:
+            head_word = self.get_head()
+            if args.use_descriptions:
+                head_word = _concat_name_desc(head_word, head_desc)
+
+            head_context = _build_context_string(self.get_head_id(), self.get_relation(), self.get_tail_id(), 
+                                                 max_context_size = args.max_context_size,
+                                                 use_context_descriptions = args.use_context_descriptions)
+            
+            if not args.use_tail_context:
+                tail_word = self.get_tail()
+                if args.use_descriptions:
+                    tail_word = _concat_name_desc(tail_word, tail_desc)
+        
+        if args.use_tail_context:
+            tail_word = self.get_tail()
+            if args.use_descriptions:
+                tail_word = _concat_name_desc(tail_word, tail_desc)
+
+            tail_context = _build_context_string(self.get_tail_id(), self.get_relation(), self.get_head_id(),
+                                                 max_context_size = args.max_context_size,
+                                                 use_context_descriptions = args.use_context_descriptions)
+        
+            
+            if not args.use_head_context:
+                head_word = self.get_head()
+                if args.use_descriptions:
+                    head_word = _concat_name_desc(head_word, head_desc)    
+
+
+        if not (args.use_neighbors or args.use_head_context or args.use_tail_context):
+            head_word = self.get_head()
+            if args.use_descriptions:
+                head_word = _concat_name_desc(head_word, head_desc)
+
+            tail_word = self.get_tail()
+            if args.use_descriptions:
+                tail_word = _concat_name_desc(tail_word, tail_desc)
+
+         
+        text_pair = self.relation
+        hr_tokens = _tokenize(head=head_word,
+                              context=head_context,
+                              text_pair=text_pair)
+
+        h_tokens = _tokenize(head=head_word)
+
+        
+        t_tokens = _tokenize(head=tail_word,
+                             context=tail_context,)
+
+        print("---------------- Head-relation decoded ----------------")
         decoded_hr_tokens =  create_tokenizer().decode(hr_tokens["input_ids"])
         print(decoded_hr_tokens)
-        print("------------ tail decoded -----------------")
+
+        print("original:")
+        print(head_word)
+        print(head_context)
+        print("-"*100)
+
+        print("---------------- Tail decoded ----------------")
         decoded_tail_tokens =  create_tokenizer().decode(t_tokens["input_ids"])
         print(decoded_tail_tokens)
-        print("------------ head decoded -----------------")
-        decoded_head_tokens =  create_tokenizer().decode(h_tokens["input_ids"])
-        print(decoded_head_tokens)
+
+        print("original:")
+        print(tail_word)
+        print(tail_context)
+        print("-"*100)
+
+        print("---------------- Head decoded ----------------")
+        decoded_h_tokens =  create_tokenizer().decode(h_tokens["input_ids"])
+        print(decoded_h_tokens)
         print("---------------------------------------")
-                  """
+
         return {'hr_token_ids': hr_tokens["input_ids"],
                 'hr_token_type_ids': hr_tokens["token_type_ids"],
                 'tail_token_ids': t_tokens["input_ids"],
@@ -330,32 +439,6 @@ class DataPoint():
                 'head_token_type_ids': h_tokens["token_type_ids"],
                 'obj': self}
         
-
-# I still need to check this, but I seems that they only build a neighborhood graph 
-# from the training set and also use that for adding neighbors during validation
-def add_neighbor_names(head_id, tail_id):
-    global neigborhood_graph
-    if neigborhood_graph is None:
-        neigborhood_graph = build_neighborhood_graph()
-    neighbors = neigborhood_graph.get_neighbors(head_id)
-    
-    neighbor_string = ""
-    for neighbor in neighbors:
-        _ , n_tail_id = neighbor
-        if n_tail_id == tail_id or tail_id == head_id:
-            continue
-        n_tail_name = entity_dict.get_entity_by_id(n_tail_id)["entity"]
-        neighbor_string += f", {n_tail_name}"
-    return neighbor_string
-
-    """ global entities
-    if not entities:
-        load_entities(os.path.join("data", args.task, "entities.json"))
-
-    neighbor_names = [entities[entity_id].get("entity", "") for entity_id in neighbor_ids]
-    return " ".join(neighbor_names) """
-
-
 class Dataset(torch.utils.data.dataset.Dataset):
     def __init__(self, path, data_points=None) -> None:
         super().__init__()

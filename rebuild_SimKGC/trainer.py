@@ -55,7 +55,8 @@ class CustomTrainer:
             collate_fn=collate_fn,
             pin_memory=True,
             drop_last=True,
-            num_workers=self.args.num_workers
+            num_workers=self.args.num_workers,
+            prefetch_factor=10
         )
         
         self.valid_data_loader = torch.utils.data.DataLoader(
