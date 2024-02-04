@@ -1,5 +1,6 @@
 # this file should contain the model of SimKGC recreated from the description in the paper
 import argparse
+import torch
 import os
 
 from transformers import AutoModel, AutoTokenizer
