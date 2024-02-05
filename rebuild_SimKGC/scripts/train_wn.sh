@@ -35,10 +35,9 @@ python3 -u main.py \
 --num-workers 1 \
 --use-descriptions \
 --max-num-desc-tokens 50 \
---max-context-size $MAX_CONTEXT_SIZE \
---use-head-context \
---use-tail-context \
---use-context-relation \
-#--use-link-graph \
-#--description-length 15
+--use-link-graph \
+#--max-context-size $MAX_CONTEXT_SIZE \
+#--use-head-context \
+#--use-tail-context \
+#--use-context-relation \
 #--custom-model-init 

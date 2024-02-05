@@ -27,7 +27,7 @@ if [[ $# -ge 1 && ! "$1" == "--"* ]]; then
 fi
 
 if [ -z "$backup_in_home" ]; then
-  backup_in_home=true
+  backup_in_home=false
 fi
 
 neighbor_weight=0.05
