@@ -53,10 +53,17 @@ class CustomModel(nn.Module):
         self.bert_t = AutoModel.from_pretrained(args.pretrained_model) # create bert model for tail entity embeddings
         
     def _encode(self, model, input_token_ids, input_mask, input_token_type_ids):
-        output = model(input_ids=input_token_ids,
-                       attention_mask=input_mask,
-                       token_type_ids=input_token_type_ids,
-                       return_dict=True)
+
+        if self.args.pretrained_model == "distilbert-base-uncased":
+            output = model(input_ids=input_token_ids,
+                              attention_mask=input_mask,
+                              return_dict=True)
+
+        else:
+            output = model(input_ids=input_token_ids,
+                            attention_mask=input_mask,
+                            token_type_ids=input_token_type_ids,
+                            return_dict=True)
         
         last_hidden_states = output.last_hidden_state
  

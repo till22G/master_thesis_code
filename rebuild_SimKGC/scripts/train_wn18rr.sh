@@ -3,12 +3,10 @@
 set -e
 set -x
 
-TASK="wn18rr"
+TASK="WN18RR"
 
-DIR="$( cd "$( dirname "$0" )" && cd .. && cd rebuild_SimKGC && pwd)"
+DIR="$( cd "$( dirname "$0" )" && cd .. && pwd )"
 echo "working directory: ${DIR}"
-
-cd "$( dirname "$0" )" && cd .. && cd rebuild_SimKGC
 
 if [ -z "$MAX_CONTEXT_SIZE" ]; then
   MAX_CONTEXT_SIZE=10
@@ -18,10 +16,10 @@ if [ -z "$OUTPUT_DIR" ]; then
   OUTPUT_DIR="${DIR}/checkpoint/${TASK}_$(date +%F-%H%M.%S)"
 fi
 
-DATA_DIR="../data/"$TASK
+DATA_DIR="${DIR}/data/"$TASK
 
 python3 -u main.py \
---pretrained-model prajjwal1/bert-tiny \
+--pretrained-model distilbert-base-uncased \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
 --valid-path "$DATA_DIR/valid.json" \
