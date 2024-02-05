@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 
 from dataclasses import dataclass
-from transformers import AutoModel, AutoConfig
+from transformers import AutoModel, AutoConfig, BertConfig, BertModel
 from logger import logger
 from help_functions import move_to_cuda
 from data_structures import construct_triplet_mask
@@ -11,13 +11,13 @@ def build_model(args) -> nn.Module:
     logger.info("Building model")
     return CustomModel(args)
 
-@dataclass
+""" @dataclass
 class ModelOutput:
     logits: torch.tensor
     labels: torch.tensor
     inv_t: torch.tensor
     hr_vector: torch.tensor
-    tail_vector: torch.tensor
+    tail_vector: torch.tensor """
 
 
 def build_model(args) -> nn.Module:
@@ -49,8 +49,14 @@ class CustomModel(nn.Module):
                              nn.functional.normalize(random_vector, dim=1),
                              persistent=False)
         
-        self.bert_hr = AutoModel.from_pretrained(args.pretrained_model) # create bert model for relation aware embeddings
-        self.bert_t = AutoModel.from_pretrained(args.pretrained_model) # create bert model for tail entity embeddings
+        if args.custom_model_init:
+            config = BertConfig()
+            self.hr_bert = BertModel(config)
+            self.tail_bert = BertModel(config)
+
+        else:
+            self.bert_hr = AutoModel.from_pretrained(args.pretrained_model) # create bert model for relation aware embeddings
+            self.bert_t = AutoModel.from_pretrained(args.pretrained_model) # create bert model for tail entity embeddings
         
     def _encode(self, model, input_token_ids, input_mask, input_token_type_ids):
 
