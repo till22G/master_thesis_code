@@ -34,11 +34,10 @@ python3 -u main.py \
 --num-epochs 50 \
 --num-workers 12 \
 --use-descriptions \
-#--max-num-desc-tokens 50 \
+--max-num-desc-tokens 50 \
+--use-link-graph \
 #--max-context-size $MAX_CONTEXT_SIZE \
 #--use-head-context \
 #--use-tail-context \
 #--use-context-relation \
-#--use-link-graph \
-#--description-length 15
 #--custom-model-init 
