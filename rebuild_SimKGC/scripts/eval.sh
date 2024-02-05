@@ -26,6 +26,10 @@ if [[ $# -ge 1 && ! "$1" == "--"* ]]; then
     shift
 fi
 
+if [ -z "$backup_in_home" ]; then
+  backup_in_home=true
+fi
+
 neighbor_weight=0.05
 rerank_n_hop=2
 if [ "${task}" = "WN18RR" ]; then
@@ -47,35 +51,38 @@ python3 -u evaluation.py \
 --test-path "${test_path}" "$@" 
 
 
+if [ "${backup_in_home}" = true ]; then
+  # copy evaluation results to home directory
+  if [ $? -eq 0 ]; then
+      echo "Evaluation completed successfully."
+  fi
 
-# copy evaluation results to home directory
-if [ $? -eq 0 ]; then
-    echo "Evaluation completed successfully."
+  # find saved evlauation metrics
+  MODEL_DIR=$(dirname "${model_path}")
+  pattern="*.txt"
+  results=$(find "$MODEL_DIR" -type f -name "$pattern")
+
+  if [ $? -eq 0 ]; then
+      echo "Files found:"
+      echo "$results"
+  else
+      echo "No files found matching the pattern '$pattern' in '$directory_path'."
+  fi
+
+  model_dir_name="${MODEL_DIR#*/}"; 
+  model_dir_name="${model_dir_name#*/}" 
+  model_dir_name="${model_dir_name#*/}" 
+  backup_path="/home/tgalla/backup_results/${model_dir_name}"
+
+  if [ ! -d "$backup_path" ]; then
+    echo "Creating backup directory"
+    mkdir -p "$backup_path"
+  fi
+
+  echo "Copying result files to ${backup_path}"
+  for file in $results; do
+    cp "$file" "$backup_path"
+  done
+
+
 fi
-
-# find saved evlauation metrics
-MODEL_DIR=$(dirname "${model_path}")
-pattern="*.txt"
-results=$(find "$MODEL_DIR" -type f -name "$pattern")
-
-if [ $? -eq 0 ]; then
-    echo "Files found:"
-    echo "$results"
-else
-    echo "No files found matching the pattern '$pattern' in '$directory_path'."
-fi
-
-model_dir_name="${MODEL_DIR#*/}"; 
-model_dir_name="${model_dir_name#*/}" 
-model_dir_name="${model_dir_name#*/}" 
-backup_path="/home/tgalla/backup_results/${model_dir_name}"
-
-if [ ! -d "$backup_path" ]; then
-  echo "Creating backup directory"
-  mkdir -p "$backup_path"
-fi
-
-echo "Copying result files to $(backup_path)"
-for file in $results; do
-  cp "$file" "$backup_path"
-done
