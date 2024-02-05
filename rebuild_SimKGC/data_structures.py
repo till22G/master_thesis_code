@@ -408,7 +408,7 @@ class DataPoint():
         t_tokens = _tokenize(head=tail_word,
                              context=tail_context,)
 
-        print("---------------- Head-relation decoded ----------------")
+        """ print("---------------- Head-relation decoded ----------------")
         decoded_hr_tokens =  create_tokenizer().decode(hr_tokens["input_ids"])
         print(decoded_hr_tokens)
 
@@ -429,7 +429,7 @@ class DataPoint():
         print("---------------- Head decoded ----------------")
         decoded_h_tokens =  create_tokenizer().decode(h_tokens["input_ids"])
         print(decoded_h_tokens)
-        print("---------------------------------------")
+        print("---------------------------------------") """
 
         return {'hr_token_ids': hr_tokens["input_ids"],
                 'hr_token_type_ids': hr_tokens["token_type_ids"],

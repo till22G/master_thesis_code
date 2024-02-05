@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set -x
-set -e
+#set -x
+#set -e
 
 model_path="bert"
 task="WN18RR"
@@ -44,4 +44,38 @@ python3 -u evaluation.py \
 --neighbor-weight "${neighbor_weight}" \
 --rerank-n-hop "${rerank_n_hop}" \
 --train-path "${DATA_DIR}/train.json" \
---test-path "${test_path}" "$@"
+--test-path "${test_path}" "$@" 
+
+
+
+# copy evaluation results to home directory
+if [ $? -eq 0 ]; then
+    echo "Evaluation completed successfully."
+fi
+
+# find saved evlauation metrics
+MODEL_DIR=$(dirname "${model_path}")
+pattern="*.txt"
+results=$(find "$MODEL_DIR" -type f -name "$pattern")
+
+if [ $? -eq 0 ]; then
+    echo "Files found:"
+    echo "$results"
+else
+    echo "No files found matching the pattern '$pattern' in '$directory_path'."
+fi
+
+model_dir_name="${MODEL_DIR#*/}"; 
+model_dir_name="${model_dir_name#*/}" 
+model_dir_name="${model_dir_name#*/}" 
+backup_path="/home/tgalla/backup_results/${model_dir_name}"
+
+if [ ! -d "$backup_path" ]; then
+  echo "Creating backup directory"
+  mkdir -p "$backup_path"
+fi
+
+echo "Copying result files to $(backup_path)"
+for file in $results; do
+  cp "$file" "$backup_path"
+done

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+TASK="wn18rr"
+
+DIR="$( cd "$( dirname "$0" )" && cd .. && cd rebuild_SimKGC && pwd)"
+echo "working directory: ${DIR}"
+
+cd "$( dirname "$0" )" && cd .. && cd rebuild_SimKGC
+
+if [ -z "$MAX_CONTEXT_SIZE" ]; then
+  MAX_CONTEXT_SIZE=10
+fi
+
+if [ -z "$OUTPUT_DIR" ]; then
+  OUTPUT_DIR="${DIR}/checkpoint/${TASK}_$(date +%F-%H%M.%S)"
+fi
+
+DATA_DIR="../data/"$TASK
+
+python3 -u main.py \
+--pretrained-model prajjwal1/bert-tiny \
+--task ${TASK} \
+--train-path "$DATA_DIR/train.json" \
+--valid-path "$DATA_DIR/valid.json" \
+--learning-rate 5e-5 \
+--warmup 400 \
+--t 0.05 \
+--finetune-t \
+--additive-margin 0.02 \
+--weight-decay 1e-4 \
+--pre-batch-weight 0.05 \
+--pre-batch 0 \
+--use-self-negatives \
+--use-amp \
+--batch-size 1024 \
+--grad-clip 10 \
+--num-workers 12 \
+--num-epochs 50 \
+--max-num-desc-tokens 50 \
+--use-descriptions \
+--max-context-size $MAX_CONTEXT_SIZE \
+--use-head-context \
+--use-tail-context \
+--use-context-relation \
+#--use-link-graph \
+#--description-length 15s
+#--custom-model-init 

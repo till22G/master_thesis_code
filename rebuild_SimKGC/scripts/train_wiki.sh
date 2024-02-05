@@ -25,8 +25,7 @@ fi
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
 --pretrained-model distilbert-base-uncased \
---pooling mean \
---lr 3e-5 \
+--learning-rate 3e-5 \
 --train-path "${DATA_DIR}/train.txt.json" \
 --valid-path "${DATA_DIR}/valid.txt.json" \
 --task "${TASK}" \

@@ -21,21 +21,18 @@ fi
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
 --pretrained-model distilbert-base-uncased \
---pooling mean \
---lr 1e-5 \
+--learning-rate learning-rate-5 \
 --train-path "$DATA_DIR/train.txt.json" \
 --valid-path "$DATA_DIR/valid.txt.json" \
 --task ${TASK} \
 --batch-size 1024 \
---print-freq 20 \
 --additive-margin 0.02 \
 --use-amp \
 --use-self-negative \
---finetune-t \
 --pre-batch 2 \
---epochs 10 \
---workers 8 \
---max-to-keep 5 "$@" \
+--finetune-t \
+--num-epochs 10 \
+--num-workers 12 \
 --use-head-context \
 --use-tail-context \
 --max-context-size $MAX_CONTEXT_SIZE \
