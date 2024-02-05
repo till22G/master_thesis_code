@@ -51,8 +51,18 @@ class EvaluationModel():
                 logger.info('Set default attribute for train arg: {}={}'.format(k, v))
                 self.train_args.__dict__[k] = v
         logger.info('Args used in training: {}'.format(json.dumps(self.train_args.__dict__, ensure_ascii=False, indent=4)))
-        args.use_neighbors = True
+        args.use_neighbors = self.train_args.use_neighbors
+        args.use_descriptions = self.train_args.use_descriptions
+        args.max_num_desc_tokens = self.train_args.max_num_desc_tokens
         args.is_test = True
+
+        # set other arguments
+        args.use_head_context = self.train_args.use_head_context
+        args.use_tail_context = self.train_args.use_tail_context
+        args.max_context_size = self.train_args.max_context_size
+        args.use_context_relation = self.train_args.use_context_relation
+        args.use_context_descriptions = self.train_args.use_context_descriptions
+        
 
     # if the model has been trained with nn.DataParallel keys have a "module." prefix
     def _setup_model_state_dict(self, state_dict):

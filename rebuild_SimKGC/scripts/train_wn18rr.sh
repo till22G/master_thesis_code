@@ -19,7 +19,8 @@ fi
 DATA_DIR="${DIR}/data/"$TASK
 
 python3 -u main.py \
---pretrained-model distilbert-base-uncased \
+--pretrained-model prajjwal1/bert-tiny \
+--model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
 --valid-path "$DATA_DIR/valid.json" \
@@ -39,10 +40,11 @@ python3 -u main.py \
 --num-epochs 50 \
 --max-num-desc-tokens 50 \
 --use-descriptions \
---max-context-size $MAX_CONTEXT_SIZE \
---use-head-context \
---use-tail-context \
---use-context-relation \
+--use-neighbors 
+#--max-context-size $MAX_CONTEXT_SIZE \
+#--use-head-context \
+#--use-tail-context \
+#--use-context-relation \
 #--use-link-graph \
 #--description-length 15s
 #--custom-model-init 

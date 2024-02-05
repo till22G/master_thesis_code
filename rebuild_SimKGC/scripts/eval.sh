@@ -84,5 +84,4 @@ if [ "${backup_in_home}" = true ]; then
     cp "$file" "$backup_path"
   done
 
-
 fi
