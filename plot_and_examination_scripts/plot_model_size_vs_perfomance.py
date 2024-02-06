@@ -1,6 +1,17 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import cm
+import argparse
+import os 
+
+from matplotlib import colormaps
+
+parser = argparse.ArgumentParser(prog="plot model size vs perfomance")
+parser.add_argument("--output-path", default=os.path.join("..", "plots", "model_size_vs_performance", "model_size_vs_performance.png"), type=str)
+args = parser.parse_args()
+
+# switch to script dir so paths work
+script_dir = os.path.dirname(__file__)
+os.chdir(script_dir)
 
 # Sample data (replace with your actual data)
 model_sizes = [8000000, 22000000, 57000000, 82000000, 132000000, 218000000, 670000000]
@@ -9,9 +20,8 @@ hit1_scores = [[33.4, 46.9, 54.9, 56.7, 58.2, 58.8, 60.45],
                [23.0, 27.8, 30.0, 31.2, 32.3, 31.3, 33.2], 
                [23.9, 41.8, 52.6, 54.6, 60.4, 60.9, 63.4]]
 
-
 # Set up the color map
-viridis = cm.get_cmap('viridis', 4)  # Change the number to match your number of datasets
+viridis = colormaps['viridis'].resampled(4)
 
 # Create a log-scale plot
 fig, ax = plt.subplots(figsize=(8, 6))
@@ -26,12 +36,11 @@ ax_top.set_xscale('log')
 ax_top.set_xlim(left=7000000, right=10e8)
 ax_top.minorticks_off()
 
-# Bottom ticks
+# Top ticks
 top_ticks = [8000000, 22000000, 57000000, 82000000, 132000000, 218000000, 670000000]
 top_tick_labels = ['BERT-tiny', 'BERT-mini', 'BERT-small', 'BERT-medium', 'distilBERT', 'BERT-base', 'BERT-large']
 ax_top.set_xticks(top_ticks)
 ax_top.set_xticklabels(top_tick_labels, rotation=20)
-
 
 # Set plot properties
 ax.set_xscale('log')
@@ -43,8 +52,10 @@ ax.legend()
 ax.grid(True)
 
 # Save the plot to a specified location
-save_path = '../../plots/test_fig.png'  # Replace with your desired location
+save_path = args.output_path
+dirname = os.path.dirname(save_path)
+if not os.path.exists(dirname):
+    os.makedirs(dirname)
 plt.savefig(save_path, bbox_inches='tight')
-
-# Show the plot
-plt.show()
+print(f"Saved plot to {save_path}")
+#plt.show()

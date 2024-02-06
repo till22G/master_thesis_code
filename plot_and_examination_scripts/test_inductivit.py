@@ -1,7 +1,23 @@
 import json
 import os
+import argparse
+from tqdm import tqdm
+
+parser = argparse.ArgumentParser(prog="test_inductivity")
+parser.add_argument("--task", default="WN18RR", type=str)
+args = parser.parse_args()
+
+# switch to script dir so paths work
+script_dir = os.path.dirname(__file__)
+os.chdir(script_dir)
+
+task = args.task
+
+print(f"Running task: {task}")
 
 def load_data(path: str):
+
+    print(f"Loading {path}")
 
     data = json.load(open(path, 'r', encoding='utf-8'))
     entities = set()
@@ -14,11 +30,9 @@ def load_data(path: str):
         triples.append(triple)
     return entities, triples
 
-task = 'wiki5m_ind'
-
-train_path = os.path.join('data', task, 'train.txt.json')
-test_path = os.path.join('data', task, 'test.txt.json')
-valid_path = os.path.join('data', task, 'valid.txt.json' )
+train_path = os.path.join('..', 'rebuild_SimKGC', 'data', task, 'train.json')
+test_path = os.path.join('..', 'rebuild_SimKGC', 'data', task, 'test.json')
+valid_path = os.path.join('..', 'rebuild_SimKGC','data', task, 'valid.json' )
 
 train_entities, train_triples = load_data(train_path)
 test_entities, test_triples = load_data(test_path)
@@ -37,7 +51,7 @@ print('Number of entities in the test set not contained in the training set: {}'
 
 count = 0
 inductive_triples = []
-for triple in test_triples:
+for triple in tqdm(test_triples):
     if triple['head_id'] in inductive_entities:
         count += 1
         inductive_triples.append(triple)
@@ -46,4 +60,4 @@ for triple in test_triples:
         count += 1
         inductive_triples.append(triple)
 
-print('This does effect {} out of the {} test triples. That is {:.4f} %'.format(count, len(test_triples), (count/len(test_triples)*100)))
+print('This effects {} out of the {} test triples. That is {:.4f} %'.format(count, len(test_triples), (count/len(test_triples)*100)))
