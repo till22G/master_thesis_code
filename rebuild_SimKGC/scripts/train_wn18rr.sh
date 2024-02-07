@@ -11,7 +11,6 @@ echo "working directory: ${DIR}"
 if [ -z "$MAX_CONTEXT_SIZE" ]; then
   MAX_CONTEXT_SIZE=10
 fi
-
 if [ -z "$OUTPUT_DIR" ]; then
   OUTPUT_DIR="${DIR}/checkpoint/${TASK}_$(date +%F-%H%M.%S)"
 fi
@@ -19,7 +18,7 @@ fi
 DATA_DIR="${DIR}/data/"$TASK
 
 python3 -u main.py \
---pretrained-model prajjwal1/bert-tiny \
+--pretrained-model distilbert-base-uncased \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
@@ -40,7 +39,7 @@ python3 -u main.py \
 --num-epochs 50 \
 --max-num-desc-tokens 50 \
 --use-descriptions \
---use-neighbors 
+#--use-neighbors 
 #--max-context-size $MAX_CONTEXT_SIZE \
 #--use-head-context \
 #--use-tail-context \

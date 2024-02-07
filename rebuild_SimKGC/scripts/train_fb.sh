@@ -18,12 +18,12 @@ if [ -z "$DATA_DIR" ]; then
   DATA_DIR="${DIR}/data/${TASK}"
 fi
 
-python3 -u main.py \
+python3 -u main.py \ 
 --model-dir "${OUTPUT_DIR}" \
 --pretrained-model distilbert-base-uncased \
---learning-rate learning-rate-5 \
---train-path "$DATA_DIR/train.txt.json" \
---valid-path "$DATA_DIR/valid.txt.json" \
+--learning-rate 1e-5  \
+--train-path "$DATA_DIR/train.json" \
+--valid-path "$DATA_DIR/valid.json" \
 --task ${TASK} \
 --batch-size 1024 \
 --additive-margin 0.02 \
@@ -33,11 +33,11 @@ python3 -u main.py \
 --finetune-t \
 --num-epochs 10 \
 --num-workers 12 \
---use-head-context \
---use-tail-context \
---max-context-size $MAX_CONTEXT_SIZE \
 --max-num-desc-tokens 50 \
---use-descriptions \
+#--max-context-size $MAX_CONTEXT_SIZE \
+#--use-head-context \
+#--use-tail-context \
+#--use-descriptions \
 #--use-context-relation \
 #--use-link-graph \
 #--description-length 15
