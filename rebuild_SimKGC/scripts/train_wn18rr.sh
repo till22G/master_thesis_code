@@ -18,7 +18,7 @@ fi
 DATA_DIR="${DIR}/data/"$TASK
 
 python3 -u main.py \
---pretrained-model distilbert-base-uncased \
+--pretrained-model bert-base-uncased \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
@@ -31,7 +31,6 @@ python3 -u main.py \
 --weight-decay 1e-4 \
 --pre-batch-weight 0.05 \
 --pre-batch 0 \
---use-self-negatives \
 --use-amp \
 --batch-size 1024 \
 --grad-clip 10 \
@@ -39,11 +38,11 @@ python3 -u main.py \
 --num-epochs 50 \
 --max-num-desc-tokens 50 \
 --use-descriptions \
-#--use-neighbors 
+--use-neighbors 
+#--use-self-negatives \
 #--max-context-size $MAX_CONTEXT_SIZE \
 #--use-head-context \
 #--use-tail-context \
 #--use-context-relation \
-#--use-link-graph \
-#--description-length 15s
+#--description-length 15
 #--custom-model-init 

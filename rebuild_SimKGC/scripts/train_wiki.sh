@@ -23,28 +23,32 @@ if [ -z "$DATA_DIR" ]; then
 fi
 
 python3 -u main.py \
---model-dir "${OUTPUT_DIR}" \
---pretrained-model distilbert-base-uncased \
---learning-rate 3e-5 \
---train-path "${DATA_DIR}/train.txt.json" \
---valid-path "${DATA_DIR}/valid.txt.json" \
---task "${TASK}" \
---batch-size 1024 \
---print-freq 20 \
---additive-margin 0.02 \
---use-amp \
---use-self-negative \
+--pretrained-model bert-base-uncased \
+--model-dir $OUTPUT_DIR \
+--task ${TASK} \
+--train-path "$DATA_DIR/train.json" \
+--valid-path "$DATA_DIR/valid.json" \
+--learning-rate 5e-5 \
+--warmup 400 \
+--t 0.05 \
 --finetune-t \
+--additive-margin 0.02 \
+--weight-decay 3e-5 \
+--pre-batch-weight 0.05 \
 --pre-batch 0 \
---epochs 1 \
---workers 30 \
---max-to-keep 10 "$@" \
---use-head-context \
---use-tail-context \
---max-context-size $MAX_CONTEXT_SIZE \
+--use-self-negatives \
+--use-amp \
+--batch-size 1024 \
+--grad-clip 10 \
+--num-workers 12 \
+--num-epochs 1 \
 --max-num-desc-tokens 50 \
---use-context-relation \
 --use-descriptions \
+#--use-neighbors 
+#--max-context-size $MAX_CONTEXT_SIZE \
+#--use-head-context \
+#--use-tail-context \
+#--use-context-relation \
 #--use-link-graph \
-#--description-length 15
+#--description-length 15s
 #--custom-model-init 

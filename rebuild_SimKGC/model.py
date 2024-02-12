@@ -11,15 +11,6 @@ def build_model(args) -> nn.Module:
     logger.info("Building model")
     return CustomModel(args)
 
-""" @dataclass
-class ModelOutput:
-    logits: torch.tensor
-    labels: torch.tensor
-    inv_t: torch.tensor
-    hr_vector: torch.tensor
-    tail_vector: torch.tensor """
-
-
 def build_model(args) -> nn.Module:
     logger.info("Building model ...")
     return CustomModel(args)

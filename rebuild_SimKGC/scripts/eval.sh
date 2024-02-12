@@ -27,7 +27,7 @@ if [[ $# -ge 1 && ! "$1" == "--"* ]]; then
 fi
 
 if [ -z "$backup_in_home" ]; then
-  backup_in_home=false
+  backup_in_home=true
 fi
 
 neighbor_weight=0.05
@@ -84,4 +84,7 @@ if [ "${backup_in_home}" = true ]; then
     cp "$file" "$backup_path"
   done
 
+  if [ $? -eq 0 ]; then
+    echo "Backup succsessful"
+  fi 
 fi

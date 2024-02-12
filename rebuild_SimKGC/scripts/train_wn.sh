@@ -20,7 +20,7 @@ fi
 
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
---pretrained-model prajjwal1/bert-tiny \
+--pretrained-model distilbert-base-uncased \
 --learning-rate 5e-5 \
 --train-path "${DATA_DIR}/train.json" \
 --valid-path "${DATA_DIR}/valid.json" \
@@ -35,7 +35,7 @@ python3 -u main.py \
 --num-workers 12 \
 --use-descriptions \
 --max-num-desc-tokens 50 \
---use-link-graph \
+--use-neighbors
 #--max-context-size $MAX_CONTEXT_SIZE \
 #--use-head-context \
 #--use-tail-context \

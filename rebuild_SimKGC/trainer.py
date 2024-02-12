@@ -55,18 +55,17 @@ class CustomTrainer:
             collate_fn=collate_fn,
             pin_memory=True,
             drop_last=True,
-            num_workers=self.args.num_workers,
-            prefetch_factor=10
+            num_workers=args.num_workers
         )
         
         self.valid_data_loader = torch.utils.data.DataLoader(
             valid_dataset,
-            batch_size=self.args.batch_size,
+            batch_size=self.args.batch_size * 2,
             shuffle=True,
             collate_fn=collate_fn,
             pin_memory=True,
             drop_last=True,
-            num_workers=self.args.num_workers
+            num_workers=self.args.num_workers 
         )
         
     def training_loop(self):
@@ -109,7 +108,7 @@ class CustomTrainer:
             if self.args.use_amp:
                 with torch.cuda.amp.autocast():
                     loss = self.criterion(logits, labels)
-                    # they also included loss for tails -> head + relation
+                    # loss for tails -> head + relation
                     loss += self.criterion(logits[:, :self.args.batch_size].t(), labels)
                     
                 self.scaler.scale(loss).backward()
@@ -127,14 +126,12 @@ class CustomTrainer:
                 
             self.lr_scheduler.step()
 
-            count = 0
-            if (i + 1) % 5000 == 0:
-                count += 100
+            if (i + 1) % 10000 == 0:
                 # save model checkpoint
                 save_dict = {"state_dict" : self.model.state_dict(),
                             "args" : self.args.__dict__,
                             "epoch" : epoch}
-                save_checkpoints(self.args, save_dict, count + epoch)
+                save_checkpoints(self.args, save_dict, i)
                 
     @torch.no_grad()        
     def evaluate_epoch(self, epoch):
