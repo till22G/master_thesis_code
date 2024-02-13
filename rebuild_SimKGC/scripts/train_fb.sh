@@ -19,6 +19,8 @@ if [ -z "$DATA_DIR" ]; then
 fi
 
 
+OUTPUT_DIR=/work/tgalla/replication_results/BERT_base_ib/FB15k237
+
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
 --pretrained-model bert-base-uncased \
@@ -39,7 +41,7 @@ python3 -u main.py \
 
 wait 
 
-OUTPUT_DIR=
+OUTPUT_DIR=/work/tgalla/replication_results/BERT_base_ib_sn/FB15k237
 
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
@@ -51,6 +53,7 @@ python3 -u main.py \
 --batch-size 1024 \
 --additive-margin 0.02 \
 --use-amp \
+--use-self-negative \
 --pre-batch 0 \
 --finetune-t \
 --num-epochs 10 \
@@ -59,7 +62,10 @@ python3 -u main.py \
 --use-neighbors \
 --use-descriptions
 
-wait
+waii
+
+
+OUTPUT_DIR=/work/tgalla/replication_results/BERT_base_ib_pb/FB15k237
 
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
@@ -71,7 +77,31 @@ python3 -u main.py \
 --batch-size 1024 \
 --additive-margin 0.02 \
 --use-amp \
---pre-batch 0 \
+--pre-batch 2 \
+--finetune-t \
+--num-epochs 10 \
+--num-workers 32 \
+--max-num-desc-tokens 50 \
+--use-neighbors \
+--use-descriptions
+
+wait 
+
+
+OUTPUT_DIR=/work/tgalla/replication_results/BERT_base_ib_sn_pb/FB15k237
+
+python3 -u main.py \
+--model-dir "${OUTPUT_DIR}" \
+--pretrained-model bert-base-uncased \
+--learning-rate 1e-5  \
+--train-path "$DATA_DIR/train.json" \
+--valid-path "$DATA_DIR/valid.json" \
+--task ${TASK} \
+--batch-size 1024 \
+--additive-margin 0.02 \
+--use-amp \
+--use-self-negative \
+--pre-batch 2 \
 --finetune-t \
 --num-epochs 10 \
 --num-workers 32 \
