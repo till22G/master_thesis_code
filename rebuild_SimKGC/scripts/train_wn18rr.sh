@@ -18,7 +18,7 @@ fi
 DATA_DIR="${DIR}/data/"$TASK
 
 python3 -u main.py \
---pretrained-model bert-base-uncased \
+--pretrained-model distilbert-base-uncased \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
