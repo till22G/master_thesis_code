@@ -67,7 +67,7 @@ parser.add_argument('--use-head-context', action='store_true',
                     help='set this option to use conext for the head')
 parser.add_argument('--use-tail-context', action='store_true',
                     help='set this option to use conext for the tail')
-parser.add_argument('--max-context-size', type=int, default=500,
+parser.add_argument('--max-context-size', type=int, default=512,
                     help='set the numbet max neighboring entities beeng used for context')
 parser.add_argument('--shuffle-context', action='store_true',
                     help='set to shuffle all neighbords')

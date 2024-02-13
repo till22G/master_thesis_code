@@ -14,7 +14,13 @@ class CustomTrainer:
         
         self.args = args
         self.model = build_model(self.args)
-        logger.info(self.model)
+        #logger.info(self.model)
+        
+        logger.info("Training arguments:")
+        logger.info("-------------------")
+        for k in self.args.__dict__:    
+            logger.info(f"{k}: {self.args.__dict__[k]}")
+        logger.info()
         
         # use GPUs if possible
         if torch.cuda.device_count() > 1:
