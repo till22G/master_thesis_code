@@ -267,17 +267,17 @@ def _build_context_string(head_id: str, relation: str, tail_id: str, max_context
     context = build_neighborhood_graph().get(head_idx)
 
     for neighbor in context[:max_context_size]:
-        n_relation, n_tail_id = neighbor
-        if n_tail_id == tail_id or tail_id == head_id:
+        n_relation, neighbor_id = neighbor
+        if not args.is_test and neighbor_id == tail_id:
             continue
-        n_tail_text = entity_dict.get_entity_by_id(n_tail_id)["entity"]
+        n_text = entity_dict.get_entity_by_id(neighbor_id)["entity"]
         if use_context_descriptions:
-            n_tail_desc = ' '.join(entity_dict.get_entity_by_id(n_tail_id).entity_desc.split()[:50])
-            n_tail_text = _concat_name_desc(n_tail_text, n_tail_desc)
+            n_tail_desc = ' '.join(entity_dict.get_entity_by_id(neighbor_id).entity_desc.split()[:50])
+            n_text = _concat_name_desc(n_text, n_tail_desc)
         if args.use_context_relation:
-            context_string += f", {n_relation} {n_tail_text}"
+            context_string += f", {n_relation} {n_text}"
         else:
-            context_string += f", {n_tail_text}"
+            context_string += f", {n_text}"
         if context_string == ", ":
             return ""
     
