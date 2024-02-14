@@ -19,7 +19,7 @@ if [ -z "$DATA_DIR" ]; then
 fi
 
 
-OUTPUT_DIR=/work/tgalla/replication_results/BERT_base_ib_pb/FB15k237
+OUTPUT_DIR=/work/tgalla/replication_results/BERT_base_ib_sn/FB15k237
 
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
@@ -31,7 +31,8 @@ python3 -u main.py \
 --batch-size 1024 \
 --additive-margin 0.02 \
 --use-amp \
---pre-batch 2 \
+--use-self-negative \
+--pre-batch 0 \
 --finetune-t \
 --num-epochs 10 \
 --num-workers 32 \

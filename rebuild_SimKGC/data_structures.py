@@ -27,6 +27,9 @@ class EntityDict():
         self._load_entity_dict(path, inductive_test_path)
     
     def _load_entity_dict(self, path: str, inductive_test_path: str = None):
+
+        if inductive_test_path:
+            path = os.path.join(os.path.dirname(inductive_test_path), "entities.json") 
         assert os.path.exists(path), "Path is invalid {}:".format(path)
         assert path.endswith(".json"), "Path has wrong formattig. JSON format expected"
     
@@ -37,15 +40,15 @@ class EntityDict():
 
         if inductive_test_path:
             with open(inductive_test_path, "r", encoding="utf-8") as infile:
-                data = json.load(infile)
+                inductive_data = json.load(infile)
 
             entity_ids = set()
-            for triple in data:
+            for triple in inductive_data:
                 entity_ids.add(triple['head_id'])
                 entity_ids.add(triple['tail_id'])
             self.entities = [entity for entity in self.entities if entity["entity_id"] in entity_ids]
 
-        self.id2entity = {entity["entity_id"]: entity for entity in data}
+        self.id2entity = {entity["entity_id"]: entity for entity in self.entities}
         self.entity2idx = {entity["entity_id"]: i for i, entity in enumerate(self.entities)}
     
     def entity_to_idx(self, entity_id: str) -> int:
@@ -568,7 +571,7 @@ def construct_triplet_mask(rows: List[DataPoint], cols: List[DataPoint] = None) 
     if cols_none:
         triplet_mask.fill_diagonal_(False)
  
-    # mask out neighbors
+    # mask out true triples
     for i in range(num_rows):
         head, relation = rows[i].get_head_id(), rows[i].get_relation()
         neighbors = training_triples_class.get_neighbors(head, relation)

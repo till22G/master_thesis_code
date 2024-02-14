@@ -1,5 +1,6 @@
 import torch.utils.data
 import torch.nn as nn
+import json
 
 from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
@@ -14,13 +15,7 @@ class CustomTrainer:
         
         self.args = args
         self.model = build_model(self.args)
-        #logger.info(self.model)
-        
-        logger.info("Training arguments:")
-        logger.info("-------------------")
-        for k in self.args.__dict__:    
-            logger.info(f"{k}: {self.args.__dict__[k]}")
-        logger.info()
+        logger.info('Training args: {}'.format(json.dumps(self.args.__dict__, ensure_ascii=False, indent=4)))
         
         # use GPUs if possible
         if torch.cuda.device_count() > 1:
@@ -132,7 +127,7 @@ class CustomTrainer:
                 
             self.lr_scheduler.step()
 
-            if (i + 1) % 10000 == 0:
+            if (i + 1) % 10000 == 1:
                 # save model checkpoint
                 save_dict = {"state_dict" : self.model.state_dict(),
                             "args" : self.args.__dict__,

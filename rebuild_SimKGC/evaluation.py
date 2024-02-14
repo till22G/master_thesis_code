@@ -27,8 +27,12 @@ def load_all_triples():
 def build_entity_dict():
     global entity_dict
     if entity_dict is None:
-        file_path = os.path.join(script_dir, os.path.join("data", args.task, "entities.json"))
-        entity_dict = EntityDict(file_path)
+        if args.task == 'wiki5m_ind':
+            file_path = os.path.join(script_dir, "data", args.task, "test.json")
+            entity_dict = EntityDict(path="", inductive_test_path=file_path)
+        else:
+            file_path = os.path.join(script_dir, os.path.join("data", args.task, "entities.json"))
+            entity_dict = EntityDict(file_path)
     return entity_dict
 
 def get_hr_embeddings(eval_model, test_data):
@@ -46,7 +50,8 @@ def get_hr_embeddings(eval_model, test_data):
         )
     
     embedded_hr_list = []
-    for i, batch_dict in enumerate((test_data_loader)):
+    logger.info("Calculate head-relation embeddings:")
+    for i, batch_dict in enumerate(tqdm(test_data_loader)):
         if torch.cuda.is_available():
             batch_dict = move_to_cuda(batch_dict)
         embedded_hr = eval_model.encode_hr(batch_dict)
@@ -78,6 +83,7 @@ def get_entity_embeddings(entity_dict, eval_model):
         )
     
     embedded_entities_list = []
+    logger.info("Embed candidate entities")
     for _ , batch_dict in enumerate(tqdm(entity_data_loader)):
         batch_dict["only_ent_embedding"] = True
         embedded_entities = eval_model.encode_candidates(batch_dict)
@@ -127,7 +133,7 @@ def rerank(batch_score: torch.tensor,
         assert args.neighbor_weight < 1e-6, 'Inductive setting can not use re-rank strategy'
 
     if args.neighbor_weight < 1e-6:
-        return
+        return batch_score
 
     entity_dict= build_entity_dict()
     for idx in range(batch_score.size(0)):
@@ -183,11 +189,17 @@ def eval(model,
                           add_backward_triplet=not forward_triples)
     
     hr_embeddings = get_hr_embeddings(model, test_data=test_data)
+    print(hr_embeddings.shape)
     labels = get_labels_as_idx(test_data)
     labels = torch.LongTensor(labels).unsqueeze(-1)
     
     mean_rank, mrr, hit1, hit3, hit10 = 0, 0, 0, 0, 0
     all_ranks = []
+    if forward_triples:
+        eval_direction = "forward"
+    else:
+        eval_direction = "backward"
+    logger.info("Eval direction: {}".format(eval_direction))
     for i in tqdm(range(0, hr_embeddings.size(0), args.batch_size)):
         step = i + args.batch_size
 
