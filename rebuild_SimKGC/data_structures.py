@@ -244,7 +244,7 @@ def _tokenize(head: str, context: Optional[str] = None, text_pair: Optional[str]
     encodings = tokenizer(text=text,
                           text_pair=text_pair if text_pair else None,
                           add_special_tokens=True,
-                          max_length=50, # tokenizer.model_max_length results in an error
+                          max_length=512, # tokenizer.model_max_length results in an error
                           return_token_type_ids=True,
                           truncation=True)
     return encodings
@@ -272,7 +272,7 @@ def _build_context_string(head_id: str, relation: str, tail_id: str, max_context
             continue
         n_text = entity_dict.get_entity_by_id(neighbor_id)["entity"]
         if use_context_descriptions:
-            n_tail_desc = ' '.join(entity_dict.get_entity_by_id(neighbor_id).entity_desc.split()[:50])
+            n_tail_desc = ' '.join(entity_dict.get_entity_by_id(neighbor_id)["entity_desc"].split()[:40])
             n_text = _concat_name_desc(n_text, n_tail_desc)
         if args.use_context_relation:
             context_string += f", {n_relation} {n_text}"
