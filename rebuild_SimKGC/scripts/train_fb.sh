@@ -18,11 +18,9 @@ if [ -z "$DATA_DIR" ]; then
   DATA_DIR="${DIR}/data/${TASK}"
 fi
 
-OUTPUT_DIR=/work/tgalla/integrate_context/FB15k237/all_context_without_relations
-
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
---pretrained-model distilbert-base-uncased \
+--pretrained-model bert-base-uncased  \
 --learning-rate 1e-5  \
 --train-path "$DATA_DIR/train.json" \
 --valid-path "$DATA_DIR/valid.json" \
@@ -34,9 +32,8 @@ python3 -u main.py \
 --pre-batch 2 \
 --finetune-t \
 --num-epochs 10 \
---num-workers 32 \
+--num-workers 12 \
 --max-num-desc-tokens 50 \
---use-descriptions \
---max-context-size $MAX_CONTEXT_SIZE \
---use-tail-context \
---use-head-context \
+--max-number-tokens 50 \
+--use-neighbors \
+--use-descriptions

@@ -53,9 +53,9 @@ python3 -u evaluation.py \
 
 if [ "${backup_in_home}" = true ]; then
   # copy evaluation results to home directory
-  if [ $? -eq 0 ]; then
-      echo "Evaluation completed successfully."
-  fi
+  #if [ $? -eq 0 ]; then
+  #    echo "Evaluation completed successfully."
+  #fi
 
   # find saved evlauation metrics
   MODEL_DIR=$(dirname "${model_path}")
@@ -65,26 +65,27 @@ if [ "${backup_in_home}" = true ]; then
   if [ $? -eq 0 ]; then
       echo "Files found:"
       echo "$results"
+
+      model_dir_name="${MODEL_DIR#*/}"; 
+      model_dir_name="${model_dir_name#*/}" 
+      model_dir_name="${model_dir_name#*/}" 
+      backup_path="/home/tgalla/backup_results/${model_dir_name}"
+
+      if [ ! -d "$backup_path" ]; then
+        echo "Creating backup directory"
+        mkdir -p "$backup_path"
+      fi
+
+      echo "Copying result files to ${backup_path}"
+      for file in $results; do
+        cp "$file" "$backup_path"
+      done
+
+      if [ $? -eq 0 ]; then
+        echo "Backup succsessful"
+      fi 
+
   else
       echo "No files found matching the pattern '$pattern' in '$directory_path'."
   fi
-
-  model_dir_name="${MODEL_DIR#*/}"; 
-  model_dir_name="${model_dir_name#*/}" 
-  model_dir_name="${model_dir_name#*/}" 
-  backup_path="/home/tgalla/backup_results/${model_dir_name}"
-
-  if [ ! -d "$backup_path" ]; then
-    echo "Creating backup directory"
-    mkdir -p "$backup_path"
-  fi
-
-  echo "Copying result files to ${backup_path}"
-  for file in $results; do
-    cp "$file" "$backup_path"
-  done
-
-  if [ $? -eq 0 ]; then
-    echo "Backup succsessful"
-  fi 
 fi

@@ -189,9 +189,10 @@ def eval(model,
                           add_backward_triplet=not forward_triples)
     
     hr_embeddings = get_hr_embeddings(model, test_data=test_data)
-    print(hr_embeddings.shape)
     labels = get_labels_as_idx(test_data)
     labels = torch.LongTensor(labels).unsqueeze(-1)
+
+    candidates = candidates.to(hr_embeddings.device)
     
     mean_rank, mrr, hit1, hit3, hit10 = 0, 0, 0, 0, 0
     all_ranks = []
@@ -200,10 +201,12 @@ def eval(model,
     else:
         eval_direction = "backward"
     logger.info("Eval direction: {}".format(eval_direction))
+    if args.task == "wiki5m_trans":
+        args.batch_size = 128
     for i in tqdm(range(0, hr_embeddings.size(0), args.batch_size)):
         step = i + args.batch_size
 
-        # calculate cosine-similarity between hr_embeddings and targets 
+        # calculate cosine-similarity between hr_embeddings and targets
         batch_scores = torch.mm(hr_embeddings[i:step,: ], candidates.t())
         batch_labels = labels[i:step].to(batch_scores.device)
 
@@ -250,7 +253,17 @@ def main():
     eval_model.load_checkpoint(checkpoint_path=args.eval_model_path)
     
     entity_dict = build_entity_dict()
-    entity_embeddings = get_entity_embeddings(entity_dict=entity_dict, eval_model=eval_model)
+    
+    if args.task == "wiki5m_trans":
+        embeddings_path = os.path.join(os.path.dirname(args.eval_model_path), "entity_embeddings")
+        if os.path.exists(embeddings_path):
+            logger.info(f"Entity embeddings found. Loading embeddings from {embeddings_path}")
+            entity_embeddings = torch.load(embeddings_path, map_location=lambda storage, loc: storage)
+        else:
+            entity_embeddings = get_entity_embeddings(entity_dict=entity_dict, eval_model=eval_model)
+            torch.save(entity_embeddings, embeddings_path)
+    else:
+        entity_embeddings = get_entity_embeddings(entity_dict=entity_dict, eval_model=eval_model)
 
     results_forward = eval(model=eval_model,
                            candidates=entity_embeddings,

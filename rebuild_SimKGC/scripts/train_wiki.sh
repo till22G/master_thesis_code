@@ -23,7 +23,35 @@ if [ -z "$DATA_DIR" ]; then
 fi
 
 
-OUTPUT_DIR="/work/tgalla/replication_results/BERT_base_ib_sn_pb/wiki5m_ind/"
+OUTPUT_DIR="/work/tgalla/replication_results/BERT_base_ib_pb"
+
+python3 -u main.py \
+--pretrained-model bert-base-uncased \
+--model-dir $OUTPUT_DIR \
+--task ${TASK} \
+--train-path "$DATA_DIR/train.json" \
+--valid-path "$DATA_DIR/valid.json" \
+--learning-rate 3e-5 \
+--warmup 400 \
+--t 0.05 \
+--finetune-t \
+--additive-margin 0.02 \
+--weight-decay 3e-5 \
+--pre-batch-weight 0.05 \
+--pre-batch 2 \
+--use-amp \
+--batch-size 1024 \
+--grad-clip 10 \
+--num-workers 6 \
+--num-epochs 1 \
+--max-num-desc-tokens 50 \
+--use-descriptions \
+--max-number-tokens 50
+
+wait
+
+
+OUTPUT_DIR="/work/tgalla/replication_results/BERT_base_ib_sn_pb"
 
 python3 -u main.py \
 --pretrained-model bert-base-uncased \
@@ -43,7 +71,8 @@ python3 -u main.py \
 --use-amp \
 --batch-size 1024 \
 --grad-clip 10 \
---num-workers 12 \
+--num-workers 6 \
 --num-epochs 1 \
 --max-num-desc-tokens 50 \
 --use-descriptions \
+--max-number-tokens 50

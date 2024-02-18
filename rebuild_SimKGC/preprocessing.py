@@ -315,7 +315,7 @@ def _load_wiki5m_entity_names(path: str) -> dict:
             lines = file.readlines()
             for line in lines:
                 split_line = line.strip().split("\t")
-                entity_name = " ".join(split_line[1:])
+                entity_name = split_line[1]
                 wiki5m_entity_names[split_line[0]] = " ".join(entity_name.split()[:10])
             logger.info("Wikidata5m_entity.txt loaded successfully ({})".format(args.task))
 

@@ -244,7 +244,7 @@ def _tokenize(head: str, context: Optional[str] = None, text_pair: Optional[str]
     encodings = tokenizer(text=text,
                           text_pair=text_pair if text_pair else None,
                           add_special_tokens=True,
-                          max_length=args.max_number_of_sequence_tokens,
+                          max_length=args.max_number_tokens,
                           # max_length=512, # tokenizer.model_max_length results in an error
                           return_token_type_ids=True,
                           truncation=True)

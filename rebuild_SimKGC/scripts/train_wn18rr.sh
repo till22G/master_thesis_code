@@ -18,10 +18,8 @@ fi
 DATA_DIR="${DIR}/data/"$TASK
 
 
-OUTPUT_DIR=/work/tgalla/distilBERT_baseline/WN18RR/no_neighbors
-
 python3 -u main.py \
---pretrained-model distilbert-base-uncased \
+--pretrained-model bert-base-uncased \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
@@ -41,28 +39,6 @@ python3 -u main.py \
 --num-workers 12 \
 --num-epochs 50 \
 --max-num-desc-tokens 50 \
-
-OUTPUT_DIR=/work/tgalla/distilBERT_baseline/WN18RR/with_neighbors
-
-python3 -u main.py \
---pretrained-model distilbert-base-uncased \
---model-dir $OUTPUT_DIR \
---task ${TASK} \
---train-path "$DATA_DIR/train.json" \
---valid-path "$DATA_DIR/valid.json" \
---learning-rate 5e-5 \
---warmup 400 \
---t 0.05 \
---finetune-t \
---additive-margin 0.02 \
---weight-decay 1e-4 \
---pre-batch-weight 0.05 \
---use-self-negatives \
---pre-batch 2 \
---use-amp \
---batch-size 1024 \
---grad-clip 10 \
---num-workers 12 \
---num-epochs 50 \
---max-num-desc-tokens 50 \
---use-neighbors
+--max-number-tokens 50 \
+--use-neighbors \
+--use-descriptions

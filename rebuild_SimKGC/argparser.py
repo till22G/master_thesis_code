@@ -48,8 +48,6 @@ parser.add_argument("--model-dir", default="test_model_dict", type=str,
                     help="define the output diretory for the model")
 parser.add_argument("--num-workers", default=1, type=int,
                     help="specify the number of workers for the data loaders")
-parser.add_argument("--max-number-sequence-tokes", default=512, type=int,
-                    help="set the maximum number of tokens for the whole input sequence")
 
 # arguments for evaluation
 parser.add_argument("--is-test", action="store_true",
