@@ -124,7 +124,7 @@ def get_hit_at_k(ranks, k=1):
     for rank in ranks:
         if rank <= k:
             hits += 1
-    return hits / len(ranks)
+    return hits / (len(ranks))
 
 def rerank(batch_score: torch.tensor,
            datapoints: List[DataPoint]):

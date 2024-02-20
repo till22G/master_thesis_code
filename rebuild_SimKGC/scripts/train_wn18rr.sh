@@ -40,5 +40,4 @@ python3 -u main.py \
 --num-epochs 50 \
 --max-num-desc-tokens 50 \
 --max-number-tokens 50 \
---use-neighbors \
 --use-descriptions

@@ -27,11 +27,8 @@ run_eval_wiki(){
     bash "$1" "$2"
 }
 
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_pb/wiki5m_ind/best_model_checkpoint.mdl wiki5m_ind & wait
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_pb/wiki5m_ind/model_checkpoint_40000.mdl wiki5m_ind & wait
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_sn/wiki5m_ind/best_model_checkpoint.mld wiki5m_ind & wait
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_sn/wiki5m_ind/model_checkpoint_40000.mdl wiki5m_ind & wait
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_sn_pb/wiki5m_ind/best_model_checkpoint.mld wiki5m_ind & wait
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_sn_pb/wiki5m_ind/model_checkpoint_40000.mdl wiki5m_ind & wait
+bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib/_wiki5m_trans/best_model_checkpoint.mdl wiki5m_trans & wait
+bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_pb/_wiki5m_trans/best_model_checkpoint.mdl wiki5m_trans & wait
+bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_sn/_wiki5m_trans/best_model_checkpoint.mdl wiki5m_trans & wait
 
 echo "done"

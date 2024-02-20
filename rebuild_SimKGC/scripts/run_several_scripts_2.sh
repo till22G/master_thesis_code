@@ -28,20 +28,22 @@ run_eval_wiki(){
 }
 
 
+
+
 # Run each script sequentially with different OUTPUT_DIR values
-run_training 500 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_all/FB15k237" "scripts/train_fb.sh" & wait
-run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_all/FB15k237/model_best.mdl" "FB15k237" & wait
-run_training 5 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_5/FB15k237" "scripts/train_fb.sh" & wait
-run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_5/FB15k237/model_best.mdl" "FB15k237" & wait
-run_training 4 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_4/FB15k237" "scripts/train_fb.sh" & wait
-run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_4/FB15k237/model_best.mdl" "FB15k237" & wait
-run_training 3 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_3/FB15k237" "scripts/train_fb.sh" & wait
-run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_3/FB15k237/model_best.mdl" "FB15k237" & wait
-run_training 2 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_2/FB15k237" "scripts/train_fb.sh" & wait
-run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_2/FB15k237/model_best.mdl" "FB15k237" & wait
-run_training 1 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_1/FB15k237" "scripts/train_fb.sh" & wait
-run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_1/FB15k237/model_best.mdl" "FB15k237" & wait
-run_training 0 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_0/FB15k237" "scripts/train_fb.sh" & wait
-run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_0/FB15k237/model_best.mdl" "FB15k237" & wait
+#run_training 500 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_all/FB15k237" "scripts/train_fb.sh" & wait
+#run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_all/FB15k237/model_best.mdl" "FB15k237" & wait
+#run_training 5 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_5/FB15k237" "scripts/train_fb.sh" & wait
+#run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_5/FB15k237/model_best.mdl" "FB15k237" & wait
+#run_training 4 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_4/FB15k237" "scripts/train_fb.sh" & wait
+#run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_4/FB15k237/model_best.mdl" "FB15k237" & wait
+#run_training 3 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_3/FB15k237" "scripts/train_fb.sh" & wait
+#run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_3/FB15k237/model_best.mdl" "FB15k237" & wait
+#run_training 2 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_2/FB15k237" "scripts/train_fb.sh" & wait
+#run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_2/FB15k237/model_best.mdl" "FB15k237" & wait
+#run_training 1 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_1/FB15k237" "scripts/train_fb.sh" & wait
+#run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_1/FB15k237/model_best.mdl" "FB15k237" & wait
+#run_training 0 "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_0/FB15k237" "scripts/train_fb.sh" & wait
+#run_eval "scripts/eval.sh" "../2_distilBERT_new_descriptions_with_head_and_tail_context_no_relation_0/FB15k237/model_best.mdl" "FB15k237" & wait
 
 echo "done"
