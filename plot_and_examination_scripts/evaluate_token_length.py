@@ -18,6 +18,8 @@ parser.add_argument("--use-context-relation", action="store_true")
 parser.add_argument("--max-num-desc-tokens", default=50, type=int)
 parser.add_argument("--max-context-size", default=10000, type=int)
 parser.add_argument("--max-number-tokens", default=10000, type=int)
+parser.add_argument("--use-relations", action="store_true")
+parser.add_argument("--cutoff", default=512)
 args = parser.parse_args()
 
 task = args.task
@@ -361,11 +363,17 @@ def _tokenize(text1: str, text2: Optional[str] = None, text_pair: Optional[str] 
 def print_hist_of_num_tokens(data, bin_size=1):
     
     #percentile_95_value = np.percentile(data_total, 95)
+    plt.figure(figsize=(8, 4))
     plt.hist(data, bins=range(min(data), max(data) + bin_size, bin_size), edgecolor='black')
     #plt.axvline(x=percentile_95_value, color='green', linestyle='--', label='95th Percentile')
     plt.xlabel('Number of Tokens')
     plt.ylabel('Frequency')
-    plt.title(f'Number of tokens for verbalized entity desc + context {task}')
+
+    if args.task == "wiki5m_trans":
+        dataset = "Wikidata5m"
+    else:
+        dataset = task
+    plt.title(f'Number of tokens for verbalized entity description + context {dataset}')
     
     save_path = f"../plots/plots/histogram_num_tokens_{task}_context_size_{args.max_context_size}_relations_{args.use_relations}"
     if not os.path.exists(os.path.dirname(save_path)):
@@ -424,8 +432,7 @@ print(f"median for number of tokens: {token_len_median}")
 print("Average number of tokens: {:.4f}".format(token_len_avg))
 print(f"Max number of tokens: {np.max(token_lenght_list)}")
 
-#max_number = 512
-#cut_node_number_of_neighbors = token_lenght_list[token_lenght_list > max_number] = max_number
+cut_node_number_of_neighbors = token_lenght_list[token_lenght_list > args.cutoff] = args.cutoff
 print_hist_of_num_tokens(token_lenght_list)
 
 
