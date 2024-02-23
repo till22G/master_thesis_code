@@ -6,7 +6,7 @@ import os
 from matplotlib import colormaps
 
 parser = argparse.ArgumentParser(prog="plot model size vs perfomance")
-parser.add_argument("--output-path", default=os.path.join("..", "plots", "model_size_vs_performance", "model_size_vs_performance.png"), type=str)
+parser.add_argument("--output-path", default=os.path.join("..", "plots", "model_size_vs_performance", "model_size_vs_performance_rep.png"), type=str)
 args = parser.parse_args()
 
 # switch to script dir so paths work
@@ -15,25 +15,27 @@ os.chdir(script_dir)
 
 # Sample data (replace with your actual data)
 model_sizes = [8000000, 22000000, 57000000, 82000000, 132000000, 218000000, 670000000]
-hit1_scores = [[33.4, 46.9, 54.9, 56.7, 59.2, 58.8, 60.45], 
-               [15.8, 20.4, 22.7, 24.1, 24.7, 24.7, 24.8], 
+hit1_scores = [[33.4, 46.9, 54.9, 56.7, 58.2, 58.8, 60.45], 
+               [15.8, 20.4, 22.7, 24.1, 24.6, 24.7, 24.8], 
                [23.0, 27.8, 30.0, 31.2, 32.3, 31.3, 33.2], 
                [23.9, 41.8, 52.6, 54.6, 60.4, 60.9, 63.4]]
 
-#hit1_scores = [[--.-, --.-, --.-, --.-, 59.2, 60.6, 60.45], 
-#               [--.-, --.-, --.-, --.-, 24.7, 24.9, 24.8], 
-#               [--.-, --.-, --.-, --.-, --.-, 31.3, 33.2], 
-#               [--.-, --.-, --.-, --.-, --.-, 60.9, 63.4]]
+
+#hit1_scores_with_neighbors = [[34.3, 48.4, 54.7, 57.2, ----], 
+#                             [ 15.4, 20.0, 22.3, ----, ----]]
+
+#hit1_scores_without_neighbors = [[30.7, 43.7 52.4, 55.4, 56.1] 
+#                                [ 15.3, 20.0 22.4, ----, 22.6]]
 
 # Set up the color map
 viridis = colormaps['viridis'].resampled(4)
 
 # Create a log-scale plot
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, ax = plt.subplots(figsize=(10, 6))
 ax.plot(model_sizes, hit1_scores[0], label=f'WN18RR', marker='o', color=viridis(0))
 ax.plot(model_sizes, hit1_scores[1], label=f'FB15k237', marker='o', color=viridis(1))
-ax.plot(model_sizes, hit1_scores[2], label=f'Wikidata-Trans', marker='o', color=viridis(2))
-ax.plot(model_sizes, hit1_scores[3], label=f'Wikidata-Ind', marker='o', color=viridis(3))
+#ax.plot(model_sizes, hit1_scores[2], label=f'Wikidata-Trans', marker='o', color=viridis(2))
+#ax.plot(model_sizes, hit1_scores[3], label=f'Wikidata-Ind', marker='o', color=viridis(3))
 
 # Create a twin Axes for the bottom ticks
 ax_top = ax.twiny()
