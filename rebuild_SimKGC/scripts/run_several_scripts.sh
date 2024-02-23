@@ -27,8 +27,20 @@ run_eval_wiki(){
     bash "$1" "$2"
 }
 
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib/_wiki5m_trans/best_model_checkpoint.mdl wiki5m_trans & wait
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_pb/_wiki5m_trans/best_model_checkpoint.mdl wiki5m_trans & wait
-bash scripts/eval.sh /work/tgalla/replication_results/BERT_base_ib_sn/_wiki5m_trans/best_model_checkpoint.mdl wiki5m_trans & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/with_relations/head_context/model_checkpoint_50.mdl & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/with_relations/tail_context/model_checkpoint_50.mdl & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/with_relations/head_and_tail_context/model_checkpoint_50.mdl & wait
+
+bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/no_relations/head_context/model_checkpoint_50.mdl & wait
+bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/no_relations/tail_context/model_checkpoint_50.mdl & wait
+bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/no_relations/head_and_tail_context/model_checkpoint_50.mdl & wait
+
+#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/with_relations/head_context/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/with_relations/tail_context/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/with_relations/head_and_tail_context/model_checkpoint_10.mdl FB15k237 & wait
+
+#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/no_relations/head_context/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/no_relations/tail_context/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/no_relations/head_and_tail_context/model_checkpoint_10.mdl FB15k237 & wait
 
 echo "done"

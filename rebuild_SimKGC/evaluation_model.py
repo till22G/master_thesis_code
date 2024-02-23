@@ -54,6 +54,7 @@ class EvaluationModel():
         args.use_neighbors = self.train_args.use_neighbors
         args.use_descriptions = self.train_args.use_descriptions
         args.max_num_desc_tokens = self.train_args.max_num_desc_tokens
+        args.max_number_tokens = self.train_args.max_number_tokens
         args.is_test = True
 
         # set other arguments
