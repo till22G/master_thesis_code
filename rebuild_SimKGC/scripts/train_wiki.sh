@@ -26,7 +26,7 @@ fi
 OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/no_descriptions/tail_context"
 
 python3 -u main.py \
---pretrained-model distilbert-base-uncased \
+--pretrained-model prajjwal1/bert-tiny \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \

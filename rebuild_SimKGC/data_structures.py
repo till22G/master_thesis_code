@@ -103,7 +103,7 @@ class TrainingTripels():
             
 
 class NeighborhoodGraph:
-    def __init__(self, train_path, entity_dict, key_col=0, max_context_size=10, shuffle=False):
+    def __init__(self, train_path, entity_dict, key_col=0, max_context_size=args.max_context_size, shuffle=False):
         self.num_entities = len(entity_dict)
         triples = json.load(open(train_path, 'r', encoding='utf-8'))
         num_triples = len(triples)
@@ -131,6 +131,21 @@ class NeighborhoodGraph:
         self.key_to_end = np.full([self.num_entities,], -1)
         self.key_to_end[keys] = self.values_offset[1:]
 
+    def _sort_context(self, context):
+        if args.most_common_first: 
+            i = -1
+        elif args.least_common_first: 
+            i = 1
+
+        unique_relations, counts = np.unique(context[:, 0], return_counts=True)
+        sorted_elements = unique_relations[np.argsort(i*counts)]
+        element_to_index = {element: index for index, element in enumerate(sorted_elements)}
+        sorted_context = context[np.argsort(np.vectorize(element_to_index.get)(context[:, 0]))]
+        print("==================")
+        print(sorted_context)
+        print("==================")
+        return sorted_context
+
     def __getitem__(self, item):
         start = self.key_to_start[item]
         end = self.key_to_end[item]
@@ -138,18 +153,23 @@ class NeighborhoodGraph:
         if self.shuffle:
             context = np.copy(context)
             np.random.shuffle(context)
+        if args.most_common_first or args.least_common_first:
+            context = self._sort_context(context)
         if end - start > self.max_context_size: 
             context = context[:self.max_context_size]
+        print("------------------")
+        print(context)
+        print("------------------")
         return context
     
     def get(self, item):
         return self[item]
 
-    def get_neighbors(self, item):
-        if item == '':
+    def get_neighbors(self, id):
+        if id == '':
             return None
         entity_dict = build_entity_dict()
-        idx = entity_dict.entity_to_idx(item)
+        idx = entity_dict.entity_to_idx(id)
         return self[idx]
     
     def get_n_hop_entity_indices(self, entity_id: str,

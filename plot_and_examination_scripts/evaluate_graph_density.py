@@ -348,6 +348,7 @@ else:
     except Exception as e:
         print(f"Could not save data to: {path}")
 
+node_number_of_neighbors = np.array(node_number_of_neighbors)
 neighbors_median = np.median(node_number_of_neighbors)
 neighbors_avg = np.average(node_number_of_neighbors)
     

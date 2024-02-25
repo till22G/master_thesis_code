@@ -79,6 +79,10 @@ parser.add_argument('--use-context-relation', action='store_true',
                     help='set this option to add the relation of the context to the input string')
 parser.add_argument('--use-context-descriptions', action='store_true',
                     help='set option to use descriptions of context entities')
+parser.add_argument('--most-common-first', action='store_true', 
+                    help="set this option to order context with the most frequent relation first")
+parser.add_argument('--least-common-first', action='store_true', 
+                    help="set this option to order context with the least frequent relation first")
 
 # arguments to init a custom model structure and to train model from scratch
 parser.add_argument('--custom-model-init', action='store_true',
@@ -97,3 +101,5 @@ if args.use_neighbors:
 
 if (args.use_head_context or args.use_tail_context):
     assert not args.use_neighbors
+
+assert args.most_common_first != args.least_common_first, "Only one of the two option can be chosen" 

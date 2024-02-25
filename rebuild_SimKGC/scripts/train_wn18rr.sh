@@ -17,31 +17,27 @@ fi
 
 DATA_DIR="${DIR}/data/"$TASK
 
-OUTPUT_DIR=/work/tgalla/test_loss/WN18RR/
-
 python3 -u main.py \
---pretrained-model prajjwal1/bert-tiny \
+--pretrained-model bert-base-uncased \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
 --valid-path "$DATA_DIR/valid.json" \
 --learning-rate 5e-5 \
---warmup 400 \
---t 0.05 \
 --finetune-t \
---additive-margin 0.02 \
---weight-decay 1e-4 \
 --pre-batch-weight 0.05 \
 --use-self-negatives \
 --pre-batch 2 \
 --use-amp \
 --batch-size 1024 \
---grad-clip 10 \
---num-workers 12 \
+--num-workers 1 \
 --num-epochs 50 \
 --max-number-tokens 50 \
 --use-descriptions \
---use-neighbors
+--use-head-context \
+--most-common-first \
+--max-context-size 2
+#--use-neighbors
 
 #--max-num-desc-tokens 50 \
 #--use-tail-context \

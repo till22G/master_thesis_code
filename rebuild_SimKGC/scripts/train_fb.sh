@@ -18,11 +18,10 @@ if [ -z "$DATA_DIR" ]; then
   DATA_DIR="${DIR}/data/${TASK}"
 fi
 
-OUTPUT_DIR=/work/tgalla/model_size_comparison/FB15k237/bert_medium/no_neighbors
 
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
---pretrained-model prajjwal1/bert-medium \
+--pretrained-model bert-base-uncased \
 --learning-rate 1e-5  \
 --train-path "$DATA_DIR/train.json" \
 --valid-path "$DATA_DIR/valid.json" \
