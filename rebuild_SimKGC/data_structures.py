@@ -141,9 +141,6 @@ class NeighborhoodGraph:
         sorted_elements = unique_relations[np.argsort(i*counts)]
         element_to_index = {element: index for index, element in enumerate(sorted_elements)}
         sorted_context = context[np.argsort(np.vectorize(element_to_index.get)(context[:, 0]))]
-        print("==================")
-        print(sorted_context)
-        print("==================")
         return sorted_context
 
     def __getitem__(self, item):
@@ -157,9 +154,6 @@ class NeighborhoodGraph:
             context = self._sort_context(context)
         if end - start > self.max_context_size: 
             context = context[:self.max_context_size]
-        print("------------------")
-        print(context)
-        print("------------------")
         return context
     
     def get(self, item):

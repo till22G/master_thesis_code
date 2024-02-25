@@ -102,4 +102,4 @@ if args.use_neighbors:
 if (args.use_head_context or args.use_tail_context):
     assert not args.use_neighbors
 
-assert args.most_common_first != args.least_common_first, "Only one of the two option can be chosen" 
+assert not (args.most_common_first and args.least_common_first), "Only one of the two option can be chosen" 
