@@ -550,3 +550,10 @@ token_len_list, token_total_len_list, number_of_neighbors = calculate_num_tokens
 
 print_hist_of_num_tokens(token_len_list, token_total_len_list, 1)
 print_hist_num_neighbors(number_of_neighbors)
+
+
+
+result = np.percentile(node_number_of_neighbors, [25,50,75])
+
+for p, value in zip([25,50,75], result):
+    print(f"{p}th percentile: {value}")

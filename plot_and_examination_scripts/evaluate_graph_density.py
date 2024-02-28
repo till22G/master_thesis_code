@@ -370,3 +370,8 @@ print(f"Max number of neighbors: {np.max(node_number_of_neighbors)}")
 max_number = args.cutoff
 cut_node_number_of_neighbors = node_number_of_neighbors[node_number_of_neighbors > max_number] = max_number
 print_hist_num_neighbors(node_number_of_neighbors)
+
+result = np.percentile(node_number_of_neighbors, [25,50,75])
+
+for p, value in zip([25,50,75], result):
+    print(f"{p}th percentile: {value}")

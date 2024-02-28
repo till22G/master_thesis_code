@@ -63,6 +63,8 @@ class EvaluationModel():
         args.max_context_size = self.train_args.max_context_size
         args.use_context_relation = self.train_args.use_context_relation
         args.use_context_descriptions = self.train_args.use_context_descriptions
+        args.most_common_first = self.train_args.most_common_first
+        args.least_common_first = self.train_args.least_common_first
         
 
     # if the model has been trained with nn.DataParallel keys have a "module." prefix

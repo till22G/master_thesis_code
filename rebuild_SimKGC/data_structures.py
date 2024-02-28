@@ -137,6 +137,8 @@ class NeighborhoodGraph:
         elif args.least_common_first: 
             i = 1
 
+        if len(context) < 2:
+            return context
         unique_relations, counts = np.unique(context[:, 0], return_counts=True)
         sorted_elements = unique_relations[np.argsort(i*counts)]
         element_to_index = {element: index for index, element in enumerate(sorted_elements)}

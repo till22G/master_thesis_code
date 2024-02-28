@@ -18,13 +18,12 @@ parser.add_argument("--use-context-relation", action="store_true")
 parser.add_argument("--max-num-desc-tokens", default=50, type=int)
 parser.add_argument("--max-context-size", default=10000, type=int)
 parser.add_argument("--max-number-tokens", default=10000, type=int)
-parser.add_argument("--use-relations", action="store_true")
 parser.add_argument("--cutoff", default=512)
 args = parser.parse_args()
 
 task = args.task
 
-args.use_relations = True
+args.use_context_relation = True
 script_dir = os.path.dirname(__file__)
 
 
@@ -354,7 +353,7 @@ def _tokenize(text1: str, text2: Optional[str] = None, text_pair: Optional[str] 
                           text_pair=text_pair if text_pair else None,
                           add_special_tokens=True,
                           max_length=10000,
-                          return_token_type_ids=True,
+                          return_token_type_ids=False,
                           truncation=True
                         )
 
@@ -375,7 +374,7 @@ def print_hist_of_num_tokens(data, bin_size=1):
         dataset = task
     plt.title(f'Number of tokens for verbalized entity description + context {dataset}')
     
-    save_path = f"../plots/plots/histogram_num_tokens_{task}_context_size_{args.max_context_size}_relations_{args.use_relations}"
+    save_path = f"../plots/plots/histogram_num_tokens_{task}_context_size_{args.max_context_size}_relations_{args.use_context_relation}"
     if not os.path.exists(os.path.dirname(save_path)):
         os.makedirs(os.path.dirname(save_path))
     plt.savefig(save_path, dpi=300)
@@ -383,7 +382,7 @@ def print_hist_of_num_tokens(data, bin_size=1):
 
 
 
-path = os.path.join('..', 'plots', 'plot_data', f"token_length_{task}_max_context_size_{args.max_context_size}_use_rel_{args.use_relations}_max_tokens_{args.max_number_tokens}.npy")
+path = os.path.join('..', 'plots', 'plot_data', f"token_length_{task}_max_context_size_{args.max_context_size}_use_rel_{args.use_context_relation}_max_tokens_{args.max_number_tokens}.npy")
 if os.path.exists(path):
     print(f"Loading graph density information from: {path}")
     token_lenght_list = np.load(path)
@@ -410,6 +409,7 @@ else:
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         np.save(path, token_lenght_list)
+        print(f"Histogram saved to: {path}")
     except Exception as e:
         print(f"Could not save data to: {path}")
     
@@ -422,7 +422,7 @@ token_output_dict = {"dataset" : task,
                      "average" : token_len_avg}
 
 
-neighbor_file_path = os.path.join('..', 'plots', 'reports', f"token_length_{task}_max_context_size_{args.max_context_size}_use_rel_{args.use_relations}.json")
+neighbor_file_path = os.path.join('..', 'plots', 'reports', f"token_length_{task}_max_context_size_{args.max_context_size}_use_rel_{args.use_context_relation}.json")
 
 with open(neighbor_file_path, "w") as json_file:
     json.dump(token_output_dict, json_file)
@@ -435,4 +435,15 @@ print(f"Max number of tokens: {np.max(token_lenght_list)}")
 cut_node_number_of_neighbors = token_lenght_list[token_lenght_list > args.cutoff] = args.cutoff
 print_hist_of_num_tokens(token_lenght_list)
 
+
+
+result = np.percentile(token_lenght_list, [25,50,75, 90, 95, 99])
+
+for p, value in zip( [25,50,75, 90, 95, 99], result):
+    print(f"{p}th percentile: {value}")
+
+
+cutoff_tokens = 512
+percentile_rank = np.sum(token_lenght_list <= cutoff_tokens) / len(token_lenght_list) * 100
+print("Percentile rank for cutoff token at {} tokens: {:.4f} ".format(cutoff_tokens, percentile_rank))
 
