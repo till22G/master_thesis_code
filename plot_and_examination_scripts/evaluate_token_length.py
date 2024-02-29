@@ -23,7 +23,7 @@ args = parser.parse_args()
 
 task = args.task
 
-args.use_context_relation = True
+args.use_context_relation = False
 script_dir = os.path.dirname(__file__)
 
 
@@ -432,18 +432,21 @@ print(f"median for number of tokens: {token_len_median}")
 print("Average number of tokens: {:.4f}".format(token_len_avg))
 print(f"Max number of tokens: {np.max(token_lenght_list)}")
 
+result = np.percentile(token_lenght_list, [25,50,75, 90, 95, 99])
+for p, value in zip( [25,50,75, 90, 95, 99], result):
+    print(f"{p}th percentile: {value}")
+
+cutoff_tokens = 512
+percentile_rank = np.sum(token_lenght_list <= cutoff_tokens) / len(token_lenght_list) * 100
+print("Percentile rank for cutoff token at {} tokens: {:.4f} ".format(cutoff_tokens, percentile_rank))
+
 cut_node_number_of_neighbors = token_lenght_list[token_lenght_list > args.cutoff] = args.cutoff
 print_hist_of_num_tokens(token_lenght_list)
 
 
 
-result = np.percentile(token_lenght_list, [25,50,75, 90, 95, 99])
-
-for p, value in zip( [25,50,75, 90, 95, 99], result):
-    print(f"{p}th percentile: {value}")
 
 
-cutoff_tokens = 512
-percentile_rank = np.sum(token_lenght_list <= cutoff_tokens) / len(token_lenght_list) * 100
-print("Percentile rank for cutoff token at {} tokens: {:.4f} ".format(cutoff_tokens, percentile_rank))
+
+
 

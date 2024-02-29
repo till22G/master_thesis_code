@@ -27,20 +27,23 @@ run_eval_wiki(){
     bash "$1" "$2"
 }
 
-#bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/with_relations/head_context/model_checkpoint_50.mdl & wait
-#bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/with_relations/tail_context/model_checkpoint_50.mdl & wait
-#bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/with_relations/head_and_tail_context/model_checkpoint_50.mdl & wait
+#bash scripts/eval.sh /work/tgalla/context_amount/WN18RR/with_descriptions/with_relations/head_and_tail_context/max_n_1/model_checkpoint_50.mdl WN18RR & wait
+#bash scripts/eval.sh /work/tgalla/context_amount/WN18RR/with_descriptions/with_relations/head_and_tail_context/max_n_3/model_checkpoint_50.mdl WN18RR & wait
+#bash scripts/eval.sh /work/tgalla/context_amount/WN18RR/with_descriptions/with_relations/head_and_tail_context/max_n_5/model_checkpoint_50.mdl WN18RR & wait
+#bash scripts/eval.sh /work/tgalla/context_amount/WN18RR/with_descriptions/with_relations/head_and_tail_context/max_n_512/model_checkpoint_50.mdl WN18RR & wait
 
-bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/no_relations/head_context/model_checkpoint_50.mdl & wait
-bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/no_relations/tail_context/model_checkpoint_50.mdl & wait
-bash scripts/eval.sh /work/tgalla/integrate_context/WN18RR/no_relations/head_and_tail_context/model_checkpoint_50.mdl & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context_512/FB15k237/no_relations/head_context/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/integrate_context_512/FB15k237/no_relations/tail_context/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/context_amount/FB15k237/no_relations/head_and_tail_context/n_5/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/context_amount/FB15k237/no_relations/head_and_tail_context/n_10/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/context_amount/FB15k237/no_relations/head_and_tail_context/n_20/model_checkpoint_10.mdl FB15k237 & wait
+#bash scripts/eval.sh /work/tgalla/context_amount/FB15k237/no_relations/head_and_tail_context/n_50/model_checkpoint_10.mdl FB15k237 & wait
 
-#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/with_relations/head_context/model_checkpoint_10.mdl FB15k237 & wait
-#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/with_relations/tail_context/model_checkpoint_10.mdl FB15k237 & wait
-#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/with_relations/head_and_tail_context/model_checkpoint_10.mdl FB15k237 & wait
 
-#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/no_relations/head_context/model_checkpoint_10.mdl FB15k237 & wait
-#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/no_relations/tail_context/model_checkpoint_10.mdl FB15k237 & wait
-#bash scripts/eval.sh /work/tgalla/integrate_context/FB15k237/no_relations/head_and_tail_context/model_checkpoint_10.mdl FB15k237 & wait
+bash scripts/train_fb.sh
+
+wait
+
+bash scripts/train_wn18rr.sh
 
 echo "done"

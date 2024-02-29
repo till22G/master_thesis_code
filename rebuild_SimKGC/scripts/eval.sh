@@ -33,11 +33,10 @@ fi
 neighbor_weight=0.05
 rerank_n_hop=2
 if [ "${task}" = "WN18RR" ]; then
-# WordNet is a sparse graph, use more neighbors for re-rank
+
   rerank_n_hop=5
 fi
 if [ "${task}" = "wiki5m_ind" ]; then
-# for inductive setting of wiki5m, test nodes never appear in the training set
   neighbor_weight=0.0
 fi
 
@@ -49,7 +48,7 @@ python3 -u evaluation.py \
 --rerank-n-hop "${rerank_n_hop}" \
 --train-path "${DATA_DIR}/train.json" \
 --test-path "${test_path}" "$@" \
---num-workers 1
+--num-workers 10
 
 
 if [ "${backup_in_home}" = true ]; then

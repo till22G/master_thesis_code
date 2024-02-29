@@ -23,35 +23,7 @@ if [ -z "$DATA_DIR" ]; then
 fi
 
 
-OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/no_descriptions/tail_context"
-
-python3 -u main.py \
---pretrained-model prajjwal1/bert-tiny \
---model-dir $OUTPUT_DIR \
---task ${TASK} \
---train-path "$DATA_DIR/train.json" \
---valid-path "$DATA_DIR/valid.json" \
---learning-rate 3e-5 \
---warmup 400 \
---t 0.05 \
---finetune-t \
---additive-margin 0.02 \
---weight-decay 3e-5 \
---pre-batch-weight 0.05 \
---use-self-negative \
---pre-batch 2 \
---use-amp \
---batch-size 1024 \
---grad-clip 10 \
---num-workers 12 \
---num-epochs 1 \
---use-tail-context \
---max-number-tokens 150
-
-wait
-
-
-OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/no_descriptions/head_and_tail_context"
+OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/with_descriptions/head_and_tail_context"
 
 python3 -u main.py \
 --pretrained-model distilbert-base-uncased \
@@ -66,13 +38,15 @@ python3 -u main.py \
 --additive-margin 0.02 \
 --weight-decay 3e-5 \
 --pre-batch-weight 0.05 \
---use-self-negative \
+--use-self-negatives \
 --pre-batch 2 \
 --use-amp \
 --batch-size 1024 \
 --grad-clip 10 \
---num-workers 12 \
+--num-workers 18 \
 --num-epochs 1 \
 --use-head-context \
 --use-tail-context \
---max-number-tokens 150
+--use-descriptions \
+--use-context-relation \
+--max-number-tokens 150 \
