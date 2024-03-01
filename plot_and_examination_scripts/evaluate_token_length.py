@@ -18,6 +18,7 @@ parser.add_argument("--use-context-relation", action="store_true")
 parser.add_argument("--max-num-desc-tokens", default=50, type=int)
 parser.add_argument("--max-context-size", default=10000, type=int)
 parser.add_argument("--max-number-tokens", default=10000, type=int)
+parser.add_argument("--use-context-descriptions", action="store_true")
 parser.add_argument("--cutoff", default=512)
 args = parser.parse_args()
 
@@ -325,7 +326,7 @@ def _build_context_string(head_id: str, relation: str = None, tail_id: str = Non
     for neighbor in context:
         n_relation, neighbor_id = neighbor
         n_text = entity_dict.get_entity_by_id(neighbor_id)["entity"]
-        if use_context_descriptions:
+        if args.use_context_descriptions:
             n_tail_desc = ' '.join(entity_dict.get_entity_by_id(neighbor_id)["entity_desc"].split()[:40])
             n_text = _concat_name_desc(n_text, n_tail_desc)
         if args.use_context_relation:
@@ -334,7 +335,6 @@ def _build_context_string(head_id: str, relation: str = None, tail_id: str = Non
             context_string += f", {n_text}"
         if context_string == ", ":
             return ""
-    
     return f"{context_string[2:]}"
 
 

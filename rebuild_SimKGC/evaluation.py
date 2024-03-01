@@ -136,9 +136,9 @@ def rerank(batch_score: torch.tensor,
         return batch_score
 
     entity_dict= build_entity_dict()
+    neigborhood_graph = build_neighborhood_graph()
     for idx in range(batch_score.size(0)):
         cur_ex = datapoints[idx]
-        neigborhood_graph = build_neighborhood_graph()
         n_hop_indices = neigborhood_graph.get_n_hop_entity_indices(cur_ex.get_head_id(),
                                                                    entity_dict=entity_dict,
                                                                    n_hop=args.rerank_n_hop)
