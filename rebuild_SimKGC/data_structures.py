@@ -117,6 +117,9 @@ class NeighborhoodGraph:
             np_triples[num_triples + i] = [tail_idx, "inverse " + triple["relation"], triple["head_id"]]
         triples = np_triples
 
+        self.most_common_first = args.most_common_first
+        self.least_common_first = args.least_common_first
+
         self.max_context_size = max_context_size
         self.shuffle = shuffle
         self.triples = np.copy(triples[triples[:, key_col].argsort()])
@@ -132,9 +135,9 @@ class NeighborhoodGraph:
         self.key_to_end[keys] = self.values_offset[1:]
 
     def _sort_context(self, context):
-        if args.most_common_first: 
+        if self.most_common_first: 
             i = -1
-        elif args.least_common_first: 
+        elif self.least_common_first: 
             i = 1
 
         if len(context) < 2:
@@ -152,7 +155,7 @@ class NeighborhoodGraph:
         if self.shuffle:
             context = np.copy(context)
             np.random.shuffle(context)
-        if args.most_common_first or args.least_common_first:
+        if self.most_common_first or self.least_common_first:
             context = self._sort_context(context)
         if end - start > self.max_context_size: 
             context = context[:self.max_context_size]

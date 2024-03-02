@@ -48,7 +48,7 @@ python3 -u evaluation.py \
 --rerank-n-hop "${rerank_n_hop}" \
 --train-path "${DATA_DIR}/train.json" \
 --test-path "${test_path}" "$@" \
---num-workers 10
+--num-workers 1
 
 
 if [ "${backup_in_home}" = true ]; then

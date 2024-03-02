@@ -17,7 +17,7 @@ fi
 
 DATA_DIR="${DIR}/data/"$TASK
 
-OUTPUT_DIR=/work/tgalla/relation_freq/most_common_first/WN18RR
+OUTPUT_DIR=/work/tgalla/test
 
 python3 -u main.py \
 --pretrained-model prajjwal1/bert-mini \
@@ -31,34 +31,10 @@ python3 -u main.py \
 --use-self-negatives \
 --pre-batch 2 \
 --use-amp \
---num-workers 12 \
+--num-workers 1 \
 --num-epochs 50 \
---max-number-tokens 512 \
+--max-number-tokens 150 \
 --use-head-context \
 --use-tail-context \
---max-context-size 3 \
---most-common-first \
---use-descriptions \
-
-OUTPUT_DIR=/work/tgalla/relation_freq/least_common_first/WN18RR
-
-python3 -u main.py \
---pretrained-model prajjwal1/bert-mini \
---model-dir $OUTPUT_DIR \
---task ${TASK} \
---train-path "$DATA_DIR/train.json" \
---valid-path "$DATA_DIR/valid.json" \
---learning-rate 5e-5 \
---finetune-t \
---pre-batch-weight 0.05 \
---use-self-negatives \
---pre-batch 2 \
---use-amp \
---num-workers 12 \
---num-epochs 50 \
---max-number-tokens 512 \
---use-head-context \
---use-tail-context \
---max-context-size 3 \
---least-common-first \
+--max-context-size 512 \
 --use-descriptions \
