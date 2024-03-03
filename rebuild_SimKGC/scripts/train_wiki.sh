@@ -23,7 +23,9 @@ if [ -z "$DATA_DIR" ]; then
 fi
 
 
-OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/with_descriptions/tail_context"
+#OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/with_descriptions/tail_context"
+
+OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/with_descriptions/no_context"
 
 python3 -u main.py \
 --pretrained-model distilbert-base-uncased \
@@ -45,7 +47,5 @@ python3 -u main.py \
 --grad-clip 10 \
 --num-workers 4 \
 --num-epochs 1 \
---use-tail-context \
 --use-descriptions \
---use-context-relation \
 --max-number-tokens 150 \

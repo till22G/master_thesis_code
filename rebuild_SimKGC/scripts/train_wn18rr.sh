@@ -17,10 +17,10 @@ fi
 
 DATA_DIR="${DIR}/data/"$TASK
 
-OUTPUT_DIR=/work/tgalla/test
+OUTPUT_DIR=/work/tgalla/rerun_distilBERT/WN18RR/without_neighbors
 
 python3 -u main.py \
---pretrained-model prajjwal1/bert-mini \
+--pretrained-model distilbert-base-uncased \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
@@ -31,10 +31,7 @@ python3 -u main.py \
 --use-self-negatives \
 --pre-batch 2 \
 --use-amp \
---num-workers 1 \
+--num-workers 24 \
 --num-epochs 50 \
---max-number-tokens 150 \
---use-head-context \
---use-tail-context \
---max-context-size 512 \
+--max-number-tokens 50 \
 --use-descriptions \
