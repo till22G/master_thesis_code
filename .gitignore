@@ -1,6 +1,7 @@
 .vscode
 __pycache__/
 /model_checkpoints
-rebuild_SimKGC/data
 checkpoint
 plots/
+rebuild_SimKGC/data/**/*.json
+rebuild_SimKGC/data/wiki*
