@@ -2,24 +2,22 @@
 
 ## Technical Requirements
 * python>=3.7
-* torch>=1.6 (for mixed precision training)
+* torch>=1.6
 * transformers>=4.15
 
 
 The requiremnts file for the environment used during experiments can be found here: [requirements.txt](requirements.txt)
 
-
 The code has been implemented to run on CUDA devices. A implementation for CPUs has been omitted, so please make sure there are 
 CUDA devices available when runnig the code.
 
-Most experiments have been conducted using 3 RTX A6000 (48GB) GPUs
+Most experiments have been conducted using 3 RTX A6000 (48GB) GPUs.
 
-When encountering "CUDA out of memory" error:
+## When encountering "CUDA out of memory" error:
     1. Make sure there are enough CUDA devices available
     2. Reduce batch size (impacts performance due to in-batch negative loss)
 
 Following the original implementation data for WN18RR and FB15k-237 is taken from [KG-BERT](https://github.com/yao8839836/kg-bert).
-
 
 Wikidata5M can be downloaded with this script taken from: https://github.com/intfloat/SimKGC/blob/main/scripts/download_wikidata5m.sh
 Just run this line:
@@ -173,11 +171,18 @@ To initialize both enocoders with random weights add the option:
 
 To select transformer model use these string as setting for "--pretrained-model":
 
-BERT-large: bert-large-uncased
-BERT-base: bert-base-uncased
-distilBERT: distilbert-base-uncased
-BERT-medium: prajjwal1/bert-medium
-BERT-small: prajjwal1/bert-small
-BERT-mini: prajjwal1/bert-mini
-BERT-tiny: prajjwal1/bert-tiny
+* BERT-large: bert-large-uncased
+* BERT-base: bert-base-uncased
+* distilBERT: distilbert-base-uncased
+* BERT-medium: prajjwal1/bert-medium
+* BERT-small: prajjwal1/bert-small
+* BERT-mini: prajjwal1/bert-mini
+* BERT-tiny: prajjwal1/bert-tiny
 
+
+The study of model size has been conducted with a fork of the official repositoy: 
+
+The modified code can be found [here](https://github.com/till22G/SimKGC/tree/add_distilBERT_capability) in the branch: add_distilBERT_capability.
+
+# ERNIE 2.0
+To run experiments with ERNIE 2.0 use: nghuyong/ernie-2.0-base-en
