@@ -9,8 +9,7 @@
 The requiremnts file for the environment used during experiments can be found here: [requirements.txt](requirements.txt)
 
 
-
-The code has been implemented to run with CUDA devices. A implementation for CPUs has been omitted, so please make sure there are 
+The code has been implemented to run on CUDA devices. A implementation for CPUs has been omitted, so please make sure there are 
 CUDA devices available when runnig the code.
 
 Most experiments have been conducted using 3 RTX A6000 (48GB) GPUs
@@ -22,7 +21,8 @@ When encountering "CUDA out of memory" error:
 Following the original implementation data for WN18RR and FB15k-237 is taken from [KG-BERT](https://github.com/yao8839836/kg-bert).
 
 
-Wikidata5M can be downloaded with this script taken from: https://github.com/intfloat/SimKGC/blob/main/eval_wiki5m_trans.py
+Wikidata5M can be downloaded with this script taken from: https://github.com/intfloat/SimKGC/blob/main/scripts/download_wikidata5m.sh
+Just run this line:
 
 ```
 bash scripts/download_wikidata5m.sh
@@ -113,7 +113,7 @@ bash scripts/eval.sh /path/to/model/ wiki5m_ind
 
 ### Parametersettings:
 
-Settings to run model with different context integration:
+Settings to run model with different context:
 
 
 Applies the neighborhood sampling from the original implementation:
@@ -139,7 +139,7 @@ This option includes the entity description for the head or tail entity (not con
 ```
 Sets the maximum number of tokens for entity descriptions (not context descriptions !!!) (default=50)
 ```
---max-num-desc-tokens
+--max-num-desc-tokens 50
 ```
 
 This option includes the entity description for context entites:
@@ -155,7 +155,29 @@ Prefix each selected neighbor with the connecting relation
 Order context by relation frequency (settings are mutually exclusive)
 
 ```
---most-common-first, action='store_true', help="set this option to order context with the most frequent relation first"
---least-common-first, action='store_true', help="set this option to order context with the least frequent relation first"
+--most-common-first
+--least-common-first
+```
+
+
+## Train BERT like model from scratch
+ 
+To initialize both enocoders with random weights add the option:
 
 ```
+--custom-model-init
+```
+
+
+# Pretrained Models:
+
+To select transformer model use these string as setting for "--pretrained-model":
+
+BERT-large: bert-large-uncased
+BERT-base: bert-base-uncased
+distilBERT: distilbert-base-uncased
+BERT-medium: prajjwal1/bert-medium
+BERT-small: prajjwal1/bert-small
+BERT-mini: prajjwal1/bert-mini
+BERT-tiny: prajjwal1/bert-tiny
+
