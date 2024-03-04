@@ -42,8 +42,8 @@ class CustomModel(nn.Module):
         
         if args.custom_model_init:
             config = BertConfig()
-            self.hr_bert = BertModel(config)
-            self.tail_bert = BertModel(config)
+            self.bert_hr = BertModel(config)
+            self.bert_t = BertModel(config)
 
         else:
             self.bert_hr = AutoModel.from_pretrained(args.pretrained_model) # create bert model for relation aware embeddings

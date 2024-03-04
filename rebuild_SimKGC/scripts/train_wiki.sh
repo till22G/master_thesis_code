@@ -22,13 +22,8 @@ if [ -z "$DATA_DIR" ]; then
   DATA_DIR="${DIR}/data/${TASK}"
 fi
 
-
-#OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/with_descriptions/tail_context"
-
-OUTPUT_DIR="/work/tgalla/integrate_context/wiki5m_trans/with_descriptions/no_context"
-
 python3 -u main.py \
---pretrained-model distilbert-base-uncased \
+--pretrained-model bert-base-uncased \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
@@ -39,13 +34,11 @@ python3 -u main.py \
 --finetune-t \
 --additive-margin 0.02 \
 --weight-decay 3e-5 \
---pre-batch-weight 0.05 \
+--pre-batch-weight 0.5 \
 --use-self-negatives \
 --pre-batch 2 \
 --use-amp \
 --batch-size 1024 \
---grad-clip 10 \
 --num-workers 4 \
 --num-epochs 1 \
 --use-descriptions \
---max-number-tokens 150 \

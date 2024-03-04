@@ -17,21 +17,19 @@ fi
 
 DATA_DIR="${DIR}/data/"$TASK
 
-OUTPUT_DIR=/work/tgalla/rerun_distilBERT/WN18RR/without_neighbors
-
 python3 -u main.py \
---pretrained-model distilbert-base-uncased \
+--pretrained-model bert-base-uncased \
 --model-dir $OUTPUT_DIR \
 --task ${TASK} \
 --train-path "$DATA_DIR/train.json" \
 --valid-path "$DATA_DIR/valid.json" \
 --learning-rate 5e-5 \
 --finetune-t \
---pre-batch-weight 0.05 \
+--pre-batch-weight 0.5 \
 --use-self-negatives \
 --pre-batch 2 \
 --use-amp \
---num-workers 24 \
+--num-workers 12 \
 --num-epochs 50 \
---max-number-tokens 50 \
 --use-descriptions \
+--use-neighbors
