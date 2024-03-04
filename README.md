@@ -83,6 +83,7 @@ bash scripts/preprocess.sh wiki5m_trans
 ```
 
 For model training run:
+Attention: be sure to specify "wiki5m_trans" to run the correct evaluation
 ```
 OUTPUT_DIR=/output/dir bash scripts/train_wiki.sh wiki5m_trans
 ```
@@ -107,6 +108,7 @@ OUTPUT_DIR=/output/dir bash scripts/train_wiki.sh wiki5m_ind
 ```
 
 For evaluation run:
+Attention: be sure to specify "wiki5m_ind" to run the correct evaluation
 ```
 bash scripts/eval.sh /path/to/model/model_checkpoint_1.mdl wiki5m_ind 
 ```
@@ -199,10 +201,10 @@ To run experiments with ERNIE 2.0 use: nghuyong/ernie-2.0-base-en
 
 # Plotting:
 
-The code used to create the plots in the thesis can be found [here](https://github.com/till22G/master_thesis_code/tree/main/plot_and_examination_scripts). All scripts can be run with:
+The code used to create the plots in the thesis can be found [here](https://github.com/till22G/master_thesis_code/tree/main/plot_and_examination_scripts). The scripts can be run with:
 
 ```
 python3 script.py --task task
 ```
 
-The individual settings for each plotting script can be found at the top of the python respective file
+The individual settings for each plotting script can be found at the top of the respective python file.
